@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="es">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -27,23 +27,23 @@
 <body>
 <main>
   <h1>Circuit Tracks Uploader</h1>
-  <p class="sub">Envía al Circuit Tracks solo firmwares verificados por SHA-256, con el mismo protocolo que Novation Components.</p>
+  <p class="sub">Sends only SHA-256 verified firmware to the Circuit Tracks, with the same protocol as Novation Components.</p>
 
   <section>
-    <h2>Antes de empezar</h2>
+    <h2>Before you start</h2>
     <ol>
-      <li>Cierra Novation Components y cualquier DAW o programa MIDI (en Windows, el puerto solo puede abrirlo una aplicación).</li>
-      <li>Conecta el Circuit Tracks directamente por USB y <b>enciéndelo en modo bootloader: mantén Scales + Preset + Note al encenderlo</b>. Con un firmware en marcha, el envío puede acabar en «éxito» y el aparato seguir con la versión anterior (Beta 5.39, 2026-11-08).</li>
-      <li>No desconectes la alimentación ni el USB durante la transferencia.</li>
+      <li>Close Novation Components and any DAW or MIDI program (on Windows only one application can open the port).</li>
+      <li>Connect the Circuit Tracks directly by USB and <b>power it on in bootloader mode: hold Scales + Preset + Note while switching it on</b>. With firmware running, the transfer can report "success" and the unit keeps the previous version (Beta 5.39, 2026-11-08).</li>
+      <li>Do not unplug power or USB during the transfer.</li>
     </ol>
   </section>
 
   <section>
     <h2>1 · MIDI</h2>
-    <div class="row"><button id="btnMidi">Permitir acceso MIDI</button><span id="midiState" class="warn">sin acceso</span></div>
-    <p>Salida hacia el Tracks</p><select id="outSel"></select>
-    <p>Entrada desde el Tracks</p><select id="inSel"></select>
-    <div class="row" style="margin-top:10px"><button id="btnId" disabled>Identificar el dispositivo</button><span id="idState"></span></div>
+    <div class="row"><button id="btnMidi">Allow MIDI access</button><span id="midiState" class="warn">no access</span></div>
+    <p>Output to the Tracks</p><select id="outSel"></select>
+    <p>Input from the Tracks</p><select id="inSel"></select>
+    <div class="row" style="margin-top:10px"><button id="btnId" disabled>Identify the device</button><span id="idState"></span></div>
   </section>
 
   <section>
@@ -53,16 +53,16 @@
   </section>
 
   <section>
-    <h2>3 · Envío</h2>
-    <p id="modeNote" class="warn">Pulsa «Identificar el dispositivo»: solo se envía al aparato en modo bootloader.</p>
-    <label><input type="checkbox" id="anyMode"> Enviar aunque el aparato esté con el firmware en marcha (no recomendado: puede no instalarse)</label>
-    <div class="row" style="margin-top:8px"><button id="btnSend" disabled>Enviar firmware</button><button id="btnAbort" disabled>Cancelar</button></div>
+    <h2>3 · Send</h2>
+    <p id="modeNote" class="warn">Press "Identify the device": it only sends to a unit in bootloader mode.</p>
+    <label><input type="checkbox" id="anyMode"> Send even if the unit is running its firmware (not recommended: it may not install)</label>
+    <div class="row" style="margin-top:8px"><button id="btnSend" disabled>Send firmware</button><button id="btnAbort" disabled>Cancel</button></div>
     <p id="phase" class="warn"></p>
     <progress id="prog" value="0" max="100"></progress>
   </section>
 
   <section>
-    <h2>Registro</h2>
+    <h2>Log</h2>
     <div id="log" class="mono"></div>
   </section>
 </main>
@@ -70,360 +70,360 @@
 "use strict";
 // Only these exact files may be sent.
 const KNOWN = {
-  "bd2d294bafa88fdec7ae1f5fcaaa13158323969c5a40f83405a72e4ad329a0bd": "STOCK Circuit Tracks 1.2.1 (build 4486) — oficial de Novation",
+  "bd2d294bafa88fdec7ae1f5fcaaa13158323969c5a40f83405a72e4ad329a0bd": "STOCK Circuit Tracks 1.2.1 (build 4486) — Novation official",
   "0f663591bd2d8093546ce834a8b2b6df4db34e2c3eb628dab9aa850ef966a8e8": "4486 + Shared MIDI channels SC02",
-  "b003164d9dcc0951c20edc6c42b169fb7ef1bd760bcc9d0e30299c76d4d861f1": "4486 + SC03: canales compartidos + toggles Ch16 Rx/Tx",
-  "4c41ced05a2e7be50d71ad0721174ff2aa5cb7213c81865930d45f4de543e257": "4486 + SC04: canales compartidos + toggle Ch16 en el pad 16",
-  "5f32507d036c1a13b95af47e0e084119176379d6f23c4d16b6e4b58179914521": "4486 + SC05: SC04 + loopback MIDI interno sin cable (prueba)",
-  "1f0a6caea221b791d9894a4fa20779abd6cb62e5a23ff73332cbb725fea189c8": "4486 + SC06: SC05 + patch flip en MIDI 1/2 (prueba)",
-  "68f845d31baf2701ff2a091f00d7bf33ba390c67211ed46d3861dd5db11dd666": "4486 + SC07: SC06 + LED del patch flip al entrar + guardado (prueba)",
-  "5797ab523ccd9fae48f31714059062a94800474724e9e1cae078bc9cbbf8175c": "4486 + SC08: SC07 + vista Preset cromática de drums (prueba)",
-  "9a99783b1e2a9de3968cfe6ade395b7f4bc771c1bb4d3c5589e26e615f4afeb6": "4486 + SC09: SC08 + Pitch de drums en semitonos (prueba)",
-  "d96468ecbb9bedab4afa5ff3732e29edc26c3938103b1a032c626123c21b84b2": "4486 + SC10: SC09 + retorno de FX por las tiras 3/4 (prueba, DSP)",
-  "476063e4e9993641228de11cded9008fe2311b54c62b211b577e479de8a5414c": "4486 + SC11: SC10 + knob Pitch como afinación en el modo cromático (prueba)",
-  "0c4993a91b7f32f49d087301bee15d38a3de7aeff400651b59052f1834bac93b": "4486 + SC12: SC11 + afinación fina en cents de los drums (prueba)",
-  "4b7281a4a9e4326cdb18b3462ff28b5b26a3c738beef915c0651fc8e7df448ab": "4486 + SC14: SC12 + Master FX (Gater / Auto-Filter) en la vista FX (prueba)",
-  "3da5085d9db7492b697239a66cfa2a40b0859cbd1ac925610ee42c3c7413b86a": "4486 + SC14.2: SC14 con el flag de retorno de FX fuera de la tabla de voces del DSP (prueba)",
-  "3612b83e37109436af9aff0252eeee0d819db12c3cb954c865e8974824f35065": "4486 + SC15: SC14.2 + entrada de línea en lugar del noise del sinte (prueba, DSP)",
-  "1c145040bba47475022421e842d37256dcef8f69a5e48ecd4b4157dad6ac3be5": "4486 + SC16: SC15 + sidechain en los drums (SC13 rehecho; prueba, DSP)",
-  "90f3684cab43247972c8f1876700d5a28abd5a3c75d13574c4a51eefe6a55d92": "4486 + SC17: SC16 + vista Master FX (Mixer -> Mixer; prueba, DSP)",
-  "98cff79287d9569546f805244458712987e84a5c55623834995acd25c897b16f": "4486 + SC16.1: SC16 + entrada de línea x2 y modos en fase invertida (prueba)",
-  "d62ea204fa0b2ebb1e22d26ef500e730526f37ae477f184f3cb827b5e9982b0c": "4486 + SC17.1: SC17 + entrada de línea x2 y modos en fase invertida (prueba)",
-  "41ceb8a62c4d8f07fe24af4028760b00ae88e5cd3c148fea1af5b9c7ede1dea5": "4486 + SC17.2: SC17.1 con Master FX en Shift + Mixer (prueba)",
-  "3a82a33347fd67d7ab18a698a07c763d4eea6bc6bf519a80c22ae7ab59959705": "4486 + SC17D: SC17.2 + diagnóstico en LEDs (Preset + Shift)",
-  "f4b20c2f9f9292c4bc84f7208528606532731d1b31c561a09e9f2d086d375145": "4486 + SC17.3: Master FX en Mixer -> Mixer (botón Mixer real) + entrada de línea v2 (prueba)",
-  "364bbfca5f4e5b832495aacacd724f853ff4649cc4d9a98243efa4797c1c2560": "4486 + SC173D: SC17.3 + diagnóstico en LEDs (Preset + Shift)",
-  "61a0ac62170399a3aa0537cda6cd75dce2b4d0510007c6f395a3222f66a788eb": "4486 + SC17.4: SC17.3 + LEDs de knobs en Master FX (prueba)",
-  "58f699842f445a8ab8a1e74de02ca480c7290db9e5a238eb3222761973af52e7": "4486 + SC17.7: SC17.6 + song pointer (Master FX, filas 2-3) + delay/reverb mas fuertes + modos en Shift+Scale (prueba)",
-  "869848d461260786e713f526e30cc9256a5bcfe883312c55c03b49114ea22e3b": "4486 + SC17.8: SC17.7 sin modos en Shift+Scale (vuelven a Shift+Preset) + pad 8 apaga lo retenido en Master FX + tocar un FX retenido lo desactiva (prueba)",
-  "e6b3d3dc5defbfe97425be4d860bd4f552abed76257dfd19f0d7fea8043b4186": "4486 + SC18: SC17.8 + knobs nuevos de drums + grabación cromática por paso (prueba)",
-  "45e0278bef804688b473557d114337dd0b8db34894f21ef8d4a829a1498fa4ad": "4486 + SC18.1: knobs de drums rehechos + pad 7 saltar + pad 8 quita song pointer (prueba)",
-  "02e3c5411011110b8b5a9fcd53d340a36d1c732436aea5190a65f0ebeb4f2230": "4486 + SC18.2: SC18.1 + LEDs de la vista FX y de los knobs nuevos de drums (prueba)",
-  "8078051785482baea66d9b2bb92f559b655d2fe4402332beb7e3ec3c80d02c7e": "4486 + SC182D: SC18.2 + sonda de persistencia (DIAGNOSTICO, usar con un proyecto de prueba)",
-  "d85302f9f87ebeaa23dd7986b2c08fe5944faa7b5dbd56150fdd976a8505329f": "4486 + SC183D: SC18.3 + sonda de persistencia v2 (DIAGNOSTICO, usar con proyectos de prueba)",
-  "424cc79344e331075ffb9818f380e7b8e271518e8d83fdb25361e68f8aff6205": "4486 + SC19: SC18.3 + ajustes de drums, asignaciones de Master FX y modos del sinte guardados en el proyecto + arreglos (prueba)",
-  "5db8bbd72f02c207b080db57823cd28e878c07d4a796492978513086a4206b15": "4486 + SC20D: SC19.1 + modos 5/6 + medidor de captura de delay y reverb (DIAGNOSTICO, usar con un proyecto de prueba)",
-  "b2e0f44ced25f14674d6eb8ea409de0538932fc375d2b7159b680c8a500f4c98": "4486 + SC19.2: SC19.1 con el trabajo de arranque escalonado (EXPERIMENTO para el cuelgue al encender, usar con un proyecto de prueba)",
-  "8b4a90b88a7050021511d2381f93c09382d043f9b919d0c5fcd4e56ab5356c57": "4486 + SC19.4: SC19.3 + los ajustes guardados vuelven (prueba)",
-  "a097637abe77fd9676e75372f355e85121eff6fa4c74fa2818a520abb8b5f2df": "4486 + SC19.5: SC19.4 + retornos de FX del Setup en la entrada del sinte (prueba)",
-  "fff8606e64f8443b7d16b61d55e16a0f4b47c4f8da2a481c9d3b63cccba83841": "4486 + SC19.6: SC19.5 + brillo de los knobs nuevos de drums (prueba)",
-  "f89a2f9efb5d77a5e2dcc9e4ae688555f5f390b797d844c71b2f7690c825fe01": "4486 + SC19.7: SC19.6 + salto del song pointer en blanco y con repetición (prueba)",
-  "8182c8a456cf3bb0534da9018885ec370fd63b99ef3dfeb7b8bb6278f1f888eb": "4486 + SC19.8: SC19.7 + knobs de drums según las etiquetas del panel (prueba)",
-  "f3f0009c3f12de8cfba4ce7b82fa946c2f75e43f9bf5ab9bf909a8a6f42151ac": "4486 + SC19.9: SC19.8 + tipo de distorsión y pendiente del filtro por drum (prueba)",
-  "ca2e993b4588ee2b64932d825b7095f4d62339161170853f543a8e929cdd545c": "4486 + SC20: SC19.9 + VCF / VCA en las entradas de audio de las pistas MIDI (prueba)",
-  "f2b9dd6540ff9a51ab4a302d05002c3debe627e1391721513c751a54250f8ef9": "4486 + SC19.3: SC19.1 con el cuelgue al encender arreglado (prueba)",
-  "62a692f244a67a8133379af94a17f27c2b1e5d0aa9d0bee4e4c9fb0de9f1e15e": "4486 + SC20.1: SC20 + escala en tres filas, Pitch como sesgo en la vista cromatica, Clear en los knobs de drums, pad 7 amarillo y estado del VCF validado (prueba)",
-  "f73a02e76fc7b3c6931534d7fdcd8806e08adbdd6a800a53f5e9e39c674c9cdc": "4486 + SC21D: SC20D.1 con un sondeo del DSP y un monitor de NRPN (DIAGNOSTICO, usar con un proyecto de prueba)",
-  "9091bd1f9cfcc24d556add67894738e156b37fba509162fa48a5a1cf58af43ec": "4486 + SC21.3: SC21.2 + los cuadros de los drums tambien al principio de la fila en la vista Note de los drums (prueba)",
-  "cbd4115afc763bc3d7834b3c5b9d67f7957f810e75bcdc5db4f088e88014a0c7": "4486 + SC21.4: SC21.3 + filtros paso bajo y paso alto de 12 y 24 dB en la lista del VCF (prueba)",
-  "a6d0f25669d578a19bf73d318dd66fa69495eb8ae596b7ae5f76d4f400586fa8": "4486 + SC22: SC21.4 + efectos ring mod / comb / chorus, cadena VCA > FX > filtro, envios bipolares y programa del DSP hasta P:$3FFF (prueba)",
-  "2e451d553d599933c4c569c021777d89295f24d6e3494db65c89db2d8b6d77dd": "4486 + SC22.1: SC22 + oscilador como fuente del modo VCF / VCA (pad 27) y pagina de knobs del oscilador (pad 28) (prueba)",
-  "ae1e2ecfe1311845e2f18b9b88ce87f2cbef16113759938c915fabe8e44af457": "4486 + SC22.2: SC22.1 + oscilador v2 (envolvente / LFO a tono y a forma, wavefold / pendiente / ancho de pulso), pad 27 = controles, pad 28 = fuente (prueba)",
-  "181f5ec1089c00eead017e277abe646c8c6f5cbe615d32bb1ceb46663f12b462": "4486 + SC22.3: SC22.2 + oscilador v3 (onda = morph continuo seno-triangulo-sierra-cuadrada con envolvente / LFO, forma 0-100) (prueba)",
-  "cc7d7655d246fca9d6baf6ef090f19bf06ed4d7f79211b8cafe75f527e92a5db": "4486 + SC22.4: SC22.3 + colores distintos y nuevo orden de los pads de la vista Preset de MIDI (prueba)",
-  "7061be260ae7445a142f7333c266d1d59d49f78312fdb555ceb95468ebe3b788": "4486 + SC23: SC22.4 + editor de CC de los macros MIDI en el propio aparato (pad 25 de la vista Preset) (prueba)",
-  "8357544cc5a3a32b7fe88cbaef1f8061d8c4f4890ce9b9d1bf68b2e54e03858d": "4486 + SC23.1: SC23 + editor de CC con Octave ▼/▲ para ciclar, botón de la pista para guardar y cualquier botón de vista para descartar (prueba)",
-  "d67c888dc2160e3dcf1ca7b1912b76dd5715e4fe981aaee7b0191caf021929d7": "4486 + SC23.2: SC23.1 + pads de MIDI: 27 solo fuente, 28 vista OSC, 29 vista VCA-VCF (prueba)",
-  "7d30f1b6d0a113af374b5409cd4280d7aa335b087319c096346f9f9ba4426b37": "4486 + SC23.3: SC23.2 + estado neutro (gate basico), Clear + knob, LEDs de Octave del editor de CC, tope de envios con efectos a line in (prueba)",
-  "45d838631e5b12fe24fb2a4edb15bcaaaa5fc8e73f3ab3f438646c11f1d454ea": "4486 + SC23.4: SC23.3 + editor de CC v2 (tipo por numero de CC, paso guardar, pad Save), Master FX (rangos, salto pasado el final, LED del salto, pad 7), pads de drums en espejo (prueba)",
-  "aa0b95b260ee31d76d7b03dcdcc7e9e0f6470f29f32c1333737295b6cc99782e": "4486 + SC23.5: SC23.4 + cabezal del song pointer desde el tick, pad 8 = bypass, K8 de drums bipolar, Clear en las dos capas, limite de ritmo + latido + refresco de los mensajes del DSP, LED del boton Save (prueba)",
-  "6c5b997379248d5d65b7231459901ade052778f6699972f7ebba62eb969dceaf": "4486 + SC23.6: SC23.5 + knobs de tipo (FX, filtro, forma de onda) sin vuelta, con zonas anchas, color por modo y brillo por parametro interno (morph, key follow)",
-  "9d161aea662df3a86acddc8b1bf5c0f9e23a401d2433ec2537576cfce3745ae5": "4486 + SC24: SC23.6 + pad 27 de tres estados, paginas en los pads 1-8, segundo oscilador (mezcla, FM, ring, sync suave, bit a bit), orden de la cadena por pista y parafonia",
-  "c5d7fdafa807f8be603bfaaf01378e19a197317996053e621e5bb9c31961780b": "4486 + SC25: SC24 + CC / NRPN de entrada y salida de los valores del modo VCA-VCF / OSC, automatizacion de 8 valores por los carriles de macros del secuenciador y la fila de plantillas al apagar el modo (pad 27)",
-  "b2181971a36044d0bbbbc7ed4abceb24ff0947cb586b6ea78d20e334930cfdfd": "4486 + SC26: SC25 + step-drummer en las pistas MIDI (pad 30: 8 pares de pasos en los knobs, pitch por carril como desplazamiento sobre un destino, velocity por par)",
-  "43ea716e6e6a581a74a5bf47c358f1c7d6937d851c6693804496fb8387079e6d": "4486 + SC27: SC26 + step-drummer en Synth 1 / 2 (macros), LEDs de Octave y 1-16/17-32, knob del paso en blanco, filas apagadas al cerrar, dos paginas de knobs mas",
-  "3dfc7fbc06d7188c7a0e45b3c78a50c5f0b91edcdc5b456071b548afcb93d3f4": "4486 + SC28: SC27 + NRPN de entrada y salida para los parametros extra de drums (MSB 5-8) y Master FX (MSB 9, canal 16)",
-  "d158b68664be82bb06b8b1cb1fe1693d312e6c30d0a0264b66908ade55ea800e": "4486 + SC29: SC28 + motor VA-drum en las pistas MIDI (cuarto estado del pad 27: tres envolventes de decay, ruido, pad 31 velocity a envolventes)",
-  "c6ddb16e7b460df6726e03081b77bfcfc2467eba60dc76009794d1be73141e18": "4486 + SC30: SC29 + Master FX entre sesiones + guardado del proyecto arreglado (prueba)",
-  "a9a6dcaf71bc7745600a2b6d831a354bb29d90f19ce0dc22b69f8fd47e8e0b0a": "4486 + SC31: SC30 + el step-drummer conserva las notas (prueba)",
-  "67e23e3e418594ec3fe01cdbea853ba9a8a3dac578fefe1530b5171e7b2e3595": "4486 + SC32: SC31 + song pointer nuevo en Master FX (retrigger, frases, sin pad 7) (prueba)",
-  "6b4b2a836792a79dd1dc3f2e1559188e3dd989a36f6fc1831db474203ec12c8f": "4486 + SC33: SC32 + sample capturado en Master FX (pad 32 graba, pad 7 suena) y grabacion en tiempo real del step-drummer (prueba)",
-  "74ef1023691b37cbede33787e53750787cd92491e2445ecf865b1b7d7e47f753": "4486 + SC34: SC33 + sample asignable a la fila inferior, captura en la vista FX, K2 por colores y sustituir un drum por la captura (prueba)",
-  "d8fa43d1cf65d94e3d791f8e9f6419d8841fa511058fda0d3c55663a859d248e": "4486 + SC34D: DIAGNOSTICO (NO USAR: rompe el duplicado de packs), SC34 + fichero propio junto a cada sesion en la SD",
-  "41ca9e01f29947040e4dab2c10b23e7b86c7323117be04d93c8a1748fbe12326": "4486 + SC35D: DIAGNOSTICO del segundo nucleo del DSP (volcado MIDI con el pad 9)",
-  "887a6026ddf443b58172ac337c3791abbf492ae97beee3d8201c073a381c6237": "4486 + SC35D.1: DIAGNOSTICO del segundo nucleo del DSP, v2 (volcado MIDI con el pad 9)",
-  "7ce523e79f56f6189c8716960cfe1bce32e8bed062a779212ea76628c20cd774": "4486 + SC35D2: DIAGNOSTICO, mapa de la memoria externa del DSP (solo lectura, volcado MIDI con el pad 9)",
-  "f401d4ed95c365800471157991c694a8da68cdc317fb251279a993e88eda9b2a": "4486 + SC35D3: DIAGNOSTICO, zonas candidatas de la memoria externa del DSP (solo lectura, volcado MIDI con el pad 9)",
-  "c0705a7827e036bd68ef0a46decfcb9d1f6364c4d950de77f84bcf45dc8041f7": "4486 + SC35D4: DIAGNOSTICO de solo lectura de la SD por la API del stock (samples 0-7 del pack, volcado MIDI)",
-  "0d9c322edb5d99962beb42dd69d98c4bf5e94827ac5d95c46f03eb6a573124e6": "4486 + SC35D5: DIAGNOSTICO de solo lectura de la SD, samples PCM 0-7 del pack (tipo 4)",
-  "058093a9f8f0a91363547029deabde89aee11ecd68ab1f3bd0527634ba566f86": "4486 + SC35D6: DIAGNOSTICO, reescribe sin cambios los 21 primeros bytes de un sample del pack (Shift + pad) y lo relee",
-  "aba1091c85775f6e7e00974f984f77eca4094a4dce35d09985484634796606b0": "4486 + SC35D7: DIAGNOSTICO, pads 17-24 reescriben sin cambios los 21 primeros bytes de los samples 0-7 y los releen",
-  "867834b651cb8bd39f34550c8f53971ae3158eca2cc897ee6f2da914cf9ecc50": "4486 + SC35D8: DIAGNOSTICO remoto por SysEx USB (tools/ctremote.py), mas los pads de SC35D7",
-  "aa3425b6fecebf49c1c129b1883d10b936c5a0f97a85da690766201134f8eb15": "4486 + SC35D9: DIAGNOSTICO remoto por SysEx USB + borrar un elemento del pack (tipos 2-6)",
-  "12dce7c82f3c47e68c879107f6d7c47895ecc7a8813b51dce0730fdfc36cd3e1": "4486 + SC342D: DIAGNOSTICO = SC34.2 + diagnostico remoto (SD y memoria del DSP por SysEx USB)",
-  "9a2d4eed83bf5b4babc1aea7f96f414355ae42c25bf48a9f014ddaa0a0b96e3d": "4486 + SC35DA: DIAGNOSTICO = SC342D + borrar un pack entero (no el actual) por SysEx USB",
-  "3eae83c6562aa5e12b2d04d822c97df384b1b126e91eabf68335e5aa2a25fb94": "4486 + SC35: SC34.2 + samples del pack en la SD (guardar la captura con Save, intercambiar dos samples, borrar un pack)",
-  "d45b6feaa0cfe3bee2272918d0e2eab0b0f1ee189610543f2f08c33d67377e9b": "4486 + SC35DB: DIAGNOSTICO, bloques de audio del nucleo 1 al 0 del DSP con carga granular (para el sinte granular), remoto",
-  "0a429c329fb38176223fbf785d692c168c65000576f9e68b46044c0751104a07": "4486 + SC36: sinte granular de MIDI 1/2, Glitch en el pad 31 de Master FX / FX y secuenciador de efectos (nucleo 1 del DSP)",
-  "f4cfad46d7cffda4791eb4d2c1988c01ad44ba144f32cd9bf37d4e18b4ac2ba0": "4486 + SC36.1: SC36 sin diagnostico USB + Glitch asignable a la fila inferior y secuenciador de efectos con los huecos de la fila inferior (un valor por giro, colores)",
-  "f8d646fbb1788a855dfad14894054446e1f156199ae3496e26c951eb7b3d2bf3": "4486 + SC361S: SC36.1 sin escrituras propias en la SD (sin packio ni diagnostico remoto) - version mas segura",
-  "b99b505115c4db3e9a81d7dd1db32722ccc7827f7e7c7cf39af1182a5547de4b": "4486 + SC36.2: SC36.1 con el knob del secuenciador de efectos arreglado (posicion fina, ~16 pasos por hueco de la fila inferior, color del efecto)",
-  "1c2b28785ed4c4ec21dab8cbd16659bdc8da6ff5a0ea374209198c9c56331414": "4486 + SC362S: SC36.2 sin escrituras propias en la SD - version mas segura",
-  "5a13f8be9827d02a8e4dc07123721f23192222a8f4f97bdf0f4c5e132495a87d": "4486 + RC0: primera version candidata (= SC36.2)",
-  "7b20bf336faff2dc0c4133047ddcb702663877605d3a54af36ab758efe5f56d8": "4486 + SC37.3: intercambios de samples sin clic (los ficheros se mueven tal cual)",
-  "26ff69b59a325bfb9b250d7a5d7adeb1f8f65b5cabba24c95802b3fd6d0dec59": "4486 + SC37.4: Duplicate en Preset de sinte / drums, copia entre packs, Glitch doble sin copiar knobs, envolvente sin clic, colores de Vinyl y retornos",
-  "dea625dda36e48ed494839063671996f60d92a889072a52eb72f3fdcd2f68244": "4486 + RC0.1 (= SC37.4): segunda version candidata",
-  "0f1711639a4c640612acdddaedc9c504effe0ed5d67c0b9bb2f6c33169c9178b": "4486 + RC0.1S: RC0.1 sin nada propio que escriba en la SD (RC0S + lo de SC37.4 fuera de la SD)",
-  "2d835b3efee2ec7988bf31831003ea7733f08ce49f3007b93cdca207e2c8eb54": "4486 + SC37.5: sobrecarga simulada en el Glitch (K4 arriba) y LED de Clear al borrar packs",
-  "d09f88383067ce40667a6333fa057f4fcd291299733def5f0a02de50248ee73a": "4486 + RC0.2 (= SC37.5): tercera version candidata",
-  "2710e58f48e796f4737a095b2891c2074fae2d52f7d94075862cc3575d453ccf": "4486 + RC0.2S: RC0.1S + la sobrecarga del Glitch (nada propio escribe en la SD)",
-  "c761dc64417bba4c0740be470d7cc694e4f4b3eaf1632dce5666c84c579b6984": "4486 + SC37.6: Clear + pad sustituye por la captura (Shift + pad vuelve a ser de stock); proteccion de la memoria de importacion y de la vista de la fuente",
-  "976432efddbe146c17922e20a38a76c8c118a48c525d8b12e8efc65f30613f88": "4486 + SC37.7: la copia entre packs va al sitio del sample sustituido si cabe; la memoria de importacion se reinicia cuando nada la usa",
-  "217de3d35c9a3686d305e088483eab3ed0ce443af144a5d5563cea6c48ef3e1b": "4486 + SC37.8: vista de packs: los packs parpadean y vuelven a su color al borrar, Clear blanco fijo",
-  "1960b2d484060b1a56c604d73a711bb91309fb3c23df4f37231296c2b80306b5": "4486 + SC37.9: azul de Clear + knob en drums como el original; Clear + knob en Master FX vuelve al valor por defecto",
-  "569c35175d8e6b9450c30708ed9950f914697c23f79c4300882a2d435c714c51": "4486 + SC38: Mixer, Shift + knob derecha = nivel 100, izquierda = 0",
-  "1482268404c5e8f6736ca5095304ade854267c11db2bf0ccdc5cd686c59cfb12": "4486 + RC0.3 (= SC38): cuarta versión candidata",
-  "1e9a53d15f666b9cc0a12df427e93f10f09463bb45546d00640a731e37c3a524": "4486 + RC0.3S: versión más segura de RC0.3 (nada del mod escribe en la SD)",
-  "6bd58380dd9823ed2d26e785692975d0fa6f404d7f06bbfbddad0149ed9a0278": "4486 + SC38.1: stretch del granular (Shift + K6 tercer modo; K3 = pasos)",
-  "9d6ecebdda41e871472d6997eedafa66e7d8afab250f583df78d70b7cd5dd741": "4486 + SC38.2: captura armada desde Play (un compás exacto)",
-  "767901bc21ea94463405777bbfb1a434688d8c377eb9bd73f612fd02bb27c85e": "4486 + SC38.3: MIDI Thru con modos Merge y Filter (Advanced Setup, Duplicate)",
-  "77b087fc1185649830d526d5f04c17babb517b8721d83c5be9a07f4609fcca0a": "4486 + SC38.4: captura armada desde Play, Duplicate a huecos vacíos entre packs, Clear fijo en la vista de packs",
-  "492c2d1235f98af64099748bd6a3d810948f80f53098d6093d6566dc8d24eeaf": "4486 + SC38.5: Shift + pad 7 = loop enganchado; huecos de patch con el Initial Patch",
-  "2292ba05159362df2f38cbb8489c332241dd8fba42cef65d04431325ed44a659": "4486 + SC38.6: SC38.5 con los huecos de patch intermedios vacíos (0xFF, como el stock)",
-  "01a705a96d58547f287711910dc8f590c3cd23f41877a79c805eaa9593bb2b7d": "4486 + SC38.7: Clear + pad 27 en MIDI 1 / 2 = todos los valores del motor a los iniciales",
-  "6acec1a0ae8393464f6b0be8c4bed325aaa8d3e3c921439048a40b33071e0410": "4486 + SC38.8: patches de sinte coloreados por modo de voz (mono azul oscuro, glide morado) + Advanced Setup sin los pads 22 / 23",
-  "0b5018a85ffaacdf40c19db02981ace229a3c86b9622ba456976f4e7840c378e": "4486 + SC38.9: Synth 1 + Synth 2 a la vez = teclado partido (pads 1-16 Synth 1, 17-32 Synth 2)",
-  "d3cc136c4ade4dbff7a40807d5a789d4b3b8adc3c3c4d15e3b5ff13d3cc94b50": "4486 + PATCHD (diagnóstico): SC38.9 + rdiag para probar el relleno de los patches",
-  "49f17a79534cb1c0836188563ec4a4b793eff31ab5191fa1257015525c50ec73": "4486 + SEQWD: DIAGNÓSTICO (SC38.9 + rdiag + punto de observación DWT: qué código lee un paso del patrón)",
-  "acdc68af7dbe3cd152354682e7141a644c328955a8d202c48ab6329f7daec7c9": "4486 + SC39: random-mutate por paso (fila 4 de la vista de probabilidad) + patches de glide en color fijo",
-  "694b0a09d2abc8d11dd944db42944f9a5651afa05503052a0403dcd35bd157a2": "4486 + BETA1: segunda beta (= SC39): BETA0 + patches por modo de voz, teclado partido, random-mutate",
-  "4c5bbb73b58839550a5cdfaaa35c6888613de55dc49ad1099601fff182e93520": "4486 + SC39.1: patches del sinte propio (MIDI 1 / 2), Clear + pad de página, selector de fuente del granular",
-  "464900cb8f452f5715a505b040048e9e4dc00f8f933a6a13eb9e8553d40b2fb3": "4486 + BETA2: tercera beta (= SC39.1): BETA1 + patches del sinte propio, Clear + página, selector de fuente del granular",
-  "f8b8f764972217e487f86f9c9246716d1c257690952b263632b2068dd2474df9": "4486 + RC0.6: séptima versión candidata = RC0.5 + dos arreglos (LFO del Auto-Filter / Phaser al activar el efecto, blanco tenue fijo)",
-  "59e3cca7142e85c5881ce59c9793a5847c854b93962510307b7179fad6f04dc9": "4486 + RC0.6S: versión más segura de RC0.6 (nada del mod escribe en la SD)",
-  "38a1f4e38a2851103435f5226fcda665632da4fd419212782e0fe3cbe7d51e69": "4486 + RC0.5: sexta versión candidata = RC0.4 + el sample capturado delante de los efectos de Master FX",
-  "fb3c2e4a866e64ad77a22ee9f61ec62981399ef8fb2af7c6f59b3f0a6f6529e3": "4486 + RC0.5S: versión más segura de RC0.5 (nada del mod escribe en la SD)",
-  "67b8426c011be0ccdef087ac265a21c65958091527c108e1f53f32ab05325774": "4486 + SC41: SC40.9 + los knobs de pitch del step-drummer conservan su valor",
+  "b003164d9dcc0951c20edc6c42b169fb7ef1bd760bcc9d0e30299c76d4d861f1": "4486 + SC03: shared channels + Ch16 Rx/Tx toggles",
+  "4c41ced05a2e7be50d71ad0721174ff2aa5cb7213c81865930d45f4de543e257": "4486 + SC04: shared channels + Ch16 toggle on pad 16",
+  "5f32507d036c1a13b95af47e0e084119176379d6f23c4d16b6e4b58179914521": "4486 + SC05: SC04 + internal cable-free MIDI loopback (test)",
+  "1f0a6caea221b791d9894a4fa20779abd6cb62e5a23ff73332cbb725fea189c8": "4486 + SC06: SC05 + patch flip on MIDI 1/2 (test)",
+  "68f845d31baf2701ff2a091f00d7bf33ba390c67211ed46d3861dd5db11dd666": "4486 + SC07: SC06 + patch flip LED when entering + saving (test)",
+  "5797ab523ccd9fae48f31714059062a94800474724e9e1cae078bc9cbbf8175c": "4486 + SC08: SC07 + chromatic drum Preset view (test)",
+  "9a99783b1e2a9de3968cfe6ade395b7f4bc771c1bb4d3c5589e26e615f4afeb6": "4486 + SC09: SC08 + drum Pitch in semitones (test)",
+  "d96468ecbb9bedab4afa5ff3732e29edc26c3938103b1a032c626123c21b84b2": "4486 + SC10: SC09 + FX return through strips 3/4 (test, DSP)",
+  "476063e4e9993641228de11cded9008fe2311b54c62b211b577e479de8a5414c": "4486 + SC11: SC10 + Pitch knob as tuning in chromatic mode (test)",
+  "0c4993a91b7f32f49d087301bee15d38a3de7aeff400651b59052f1834bac93b": "4486 + SC12: SC11 + fine drum tuning in cents (test)",
+  "4b7281a4a9e4326cdb18b3462ff28b5b26a3c738beef915c0651fc8e7df448ab": "4486 + SC14: SC12 + Master FX (Gater / Auto-Filter) in the FX view (test)",
+  "3da5085d9db7492b697239a66cfa2a40b0859cbd1ac925610ee42c3c7413b86a": "4486 + SC14.2: SC14 with the FX return flag outside the DSP voice table (test)",
+  "3612b83e37109436af9aff0252eeee0d819db12c3cb954c865e8974824f35065": "4486 + SC15: SC14.2 + line input instead of the synth's noise (test, DSP)",
+  "1c145040bba47475022421e842d37256dcef8f69a5e48ecd4b4157dad6ac3be5": "4486 + SC16: SC15 + sidechain on the drums (SC13 redone; test, DSP)",
+  "90f3684cab43247972c8f1876700d5a28abd5a3c75d13574c4a51eefe6a55d92": "4486 + SC17: SC16 + Master FX view (Mixer -> Mixer; test, DSP)",
+  "98cff79287d9569546f805244458712987e84a5c55623834995acd25c897b16f": "4486 + SC16.1: SC16 + line input x2 and phase-inverted modes (test)",
+  "d62ea204fa0b2ebb1e22d26ef500e730526f37ae477f184f3cb827b5e9982b0c": "4486 + SC17.1: SC17 + line input x2 and phase-inverted modes (test)",
+  "41ceb8a62c4d8f07fe24af4028760b00ae88e5cd3c148fea1af5b9c7ede1dea5": "4486 + SC17.2: SC17.1 with Master FX on Shift + Mixer (test)",
+  "3a82a33347fd67d7ab18a698a07c763d4eea6bc6bf519a80c22ae7ab59959705": "4486 + SC17D: SC17.2 + LED diagnostics (Preset + Shift)",
+  "f4b20c2f9f9292c4bc84f7208528606532731d1b31c561a09e9f2d086d375145": "4486 + SC17.3: Master FX on Mixer -> Mixer (real Mixer button) + line input v2 (test)",
+  "364bbfca5f4e5b832495aacacd724f853ff4649cc4d9a98243efa4797c1c2560": "4486 + SC173D: SC17.3 + LED diagnostics (Preset + Shift)",
+  "61a0ac62170399a3aa0537cda6cd75dce2b4d0510007c6f395a3222f66a788eb": "4486 + SC17.4: SC17.3 + knob LEDs in Master FX (test)",
+  "58f699842f445a8ab8a1e74de02ca480c7290db9e5a238eb3222761973af52e7": "4486 + SC17.7: SC17.6 + song pointer (Master FX, rows 2-3) + stronger delay/reverb + modes on Shift+Scale (test)",
+  "869848d461260786e713f526e30cc9256a5bcfe883312c55c03b49114ea22e3b": "4486 + SC17.8: SC17.7 without the Shift+Scale modes (back to Shift+Preset) + pad 8 turns off what is held in Master FX + touching a held FX disables it (test)",
+  "e6b3d3dc5defbfe97425be4d860bd4f552abed76257dfd19f0d7fea8043b4186": "4486 + SC18: SC17.8 + new drum knobs + chromatic per-step recording (test)",
+  "45e0278bef804688b473557d114337dd0b8db34894f21ef8d4a829a1498fa4ad": "4486 + SC18.1: drum knobs redone + pad 7 skip + pad 8 removes the song pointer (test)",
+  "02e3c5411011110b8b5a9fcd53d340a36d1c732436aea5190a65f0ebeb4f2230": "4486 + SC18.2: SC18.1 + FX view LEDs and LEDs for the new drum knobs (test)",
+  "8078051785482baea66d9b2bb92f559b655d2fe4402332beb7e3ec3c80d02c7e": "4486 + SC182D: SC18.2 + persistence probe (DIAGNOSTIC, use with a test project)",
+  "d85302f9f87ebeaa23dd7986b2c08fe5944faa7b5dbd56150fdd976a8505329f": "4486 + SC183D: SC18.3 + persistence probe v2 (DIAGNOSTIC, use with test projects)",
+  "424cc79344e331075ffb9818f380e7b8e271518e8d83fdb25361e68f8aff6205": "4486 + SC19: SC18.3 + drum settings, Master FX assignments and synth modes saved with the project + fixes (test)",
+  "5db8bbd72f02c207b080db57823cd28e878c07d4a796492978513086a4206b15": "4486 + SC20D: SC19.1 + modes 5/6 + delay and reverb capture meter (DIAGNOSTIC, use with a test project)",
+  "b2e0f44ced25f14674d6eb8ea409de0538932fc375d2b7159b680c8a500f4c98": "4486 + SC19.2: SC19.1 with the staggered-start work (EXPERIMENT for the hang at power-on, use with a test project)",
+  "8b4a90b88a7050021511d2381f93c09382d043f9b919d0c5fcd4e56ab5356c57": "4486 + SC19.4: SC19.3 + saved settings come back (test)",
+  "a097637abe77fd9676e75372f355e85121eff6fa4c74fa2818a520abb8b5f2df": "4486 + SC19.5: SC19.4 + Setup FX returns into the synth input (test)",
+  "fff8606e64f8443b7d16b61d55e16a0f4b47c4f8da2a481c9d3b63cccba83841": "4486 + SC19.6: SC19.5 + brightness of the new drum knobs (test)",
+  "f89a2f9efb5d77a5e2dcc9e4ae688555f5f390b797d844c71b2f7690c825fe01": "4486 + SC19.7: SC19.6 + song pointer skip on white and with repeat (test)",
+  "8182c8a456cf3bb0534da9018885ec370fd63b99ef3dfeb7b8bb6278f1f888eb": "4486 + SC19.8: SC19.7 + drum knobs following the panel labels (test)",
+  "f3f0009c3f12de8cfba4ce7b82fa946c2f75e43f9bf5ab9bf909a8a6f42151ac": "4486 + SC19.9: SC19.8 + per-drum distortion type and filter slope (test)",
+  "ca2e993b4588ee2b64932d825b7095f4d62339161170853f543a8e929cdd545c": "4486 + SC20: SC19.9 + VCF / VCA on the MIDI tracks' audio inputs (test)",
+  "f2b9dd6540ff9a51ab4a302d05002c3debe627e1391721513c751a54250f8ef9": "4486 + SC19.3: SC19.1 with the hang at power-on fixed (test)",
+  "62a692f244a67a8133379af94a17f27c2b1e5d0aa9d0bee4e4c9fb0de9f1e15e": "4486 + SC20.1: SC20 + scale in three rows, Pitch as offset in the chromatic view, Clear on the drum knobs, yellow pad 7 and the VCF state validated (test)",
+  "f73a02e76fc7b3c6931534d7fdcd8806e08adbdd6a800a53f5e9e39c674c9cdc": "4486 + SC21D: SC20D.1 with a DSP probe and an NRPN monitor (DIAGNOSTIC, use with a test project)",
+  "9091bd1f9cfcc24d556add67894738e156b37fba509162fa48a5a1cf58af43ec": "4486 + SC21.3: SC21.2 + drum squares also at the start of the row in the drum Note view (test)",
+  "cbd4115afc763bc3d7834b3c5b9d67f7957f810e75bcdc5db4f088e88014a0c7": "4486 + SC21.4: SC21.3 + 12 and 24 dB low-pass and high-pass filters in the VCF list (test)",
+  "a6d0f25669d578a19bf73d318dd66fa69495eb8ae596b7ae5f76d4f400586fa8": "4486 + SC22: SC21.4 + ring mod / comb / chorus effects, VCA > FX > filter chain, bipolar sends and DSP program up to P:$3FFF (test)",
+  "2e451d553d599933c4c569c021777d89295f24d6e3494db65c89db2d8b6d77dd": "4486 + SC22.1: SC22 + oscillator as VCF / VCA source (pad 27) and oscillator knob page (pad 28) (test)",
+  "ae1e2ecfe1311845e2f18b9b88ce87f2cbef16113759938c915fabe8e44af457": "4486 + SC22.2: SC22.1 + oscillator v2 (envelope / LFO to pitch and shape, wavefold / slope / pulse width), pad 27 = controls, pad 28 = source (test)",
+  "181f5ec1089c00eead017e277abe646c8c6f5cbe615d32bb1ceb46663f12b462": "4486 + SC22.3: SC22.2 + oscillator v3 (wave = continuous sine-triangle-saw-square morph with envelope / LFO, shape 0-100) (test)",
+  "cc7d7655d246fca9d6baf6ef090f19bf06ed4d7f79211b8cafe75f527e92a5db": "4486 + SC22.4: SC22.3 + different colours and a new order for the MIDI Preset view pads (test)",
+  "7061be260ae7445a142f7333c266d1d59d49f78312fdb555ceb95468ebe3b788": "4486 + SC23: SC22.4 + on-device CC editor for the MIDI macros (pad 25 of the Preset view) (test)",
+  "8357544cc5a3a32b7fe88cbaef1f8061d8c4f4890ce9b9d1bf68b2e54e03858d": "4486 + SC23.1: SC23 + CC editor with Octave ▼/▲ to cycle, the track button to save and any view button to discard (test)",
+  "d67c888dc2160e3dcf1ca7b1912b76dd5715e4fe981aaee7b0191caf021929d7": "4486 + SC23.2: SC23.1 + MIDI pads: 27 source only, 28 OSC view, 29 VCA-VCF view (test)",
+  "7d30f1b6d0a113af374b5409cd4280d7aa335b087319c096346f9f9ba4426b37": "4486 + SC23.3: SC23.2 + neutral state (basic gate), Clear + knob, Octave LEDs of the CC editor, cap on sends with line-in effects (test)",
+  "45d838631e5b12fe24fb2a4edb15bcaaaa5fc8e73f3ab3f438646c11f1d454ea": "4486 + SC23.4: SC23.3 + CC editor v2 (type by CC number, save step, Save pad), Master FX (ranges, skip past the end, skip LED, pad 7), mirrored drum pads (test)",
+  "aa0b95b260ee31d76d7b03dcdcc7e9e0f6470f29f32c1333737295b6cc99782e": "4486 + SC23.5: SC23.4 + song pointer head from the tick, pad 8 = bypass, bipolar drum K8, Clear on both layers, rate limit + beat + DSP message refresh, Save button LED (test)",
+  "6c5b997379248d5d65b7231459901ade052778f6699972f7ebba62eb969dceaf": "4486 + SC23.6: SC23.5 + type knobs (FX, filter, waveform) without wrap, with wide zones, colour per mode and brightness per internal parameter (morph, key follow)",
+  "9d161aea662df3a86acddc8b1bf5c0f9e23a401d2433ec2537576cfce3745ae5": "4486 + SC24: SC23.6 + three-state pad 27, pages on pads 1-8, second oscillator (mix, FM, ring, soft sync, bit crush), per-track chain order and paraphony",
+  "c5d7fdafa807f8be603bfaaf01378e19a197317996053e621e5bb9c31961780b": "4486 + SC25: SC24 + VCA-VCF / OSC mode values in and out over CC / NRPN, automation of 8 values via the sequencer macro lanes and the template row when the mode is off (pad 27)",
+  "b2181971a36044d0bbbbc7ed4abceb24ff0947cb586b6ea78d20e334930cfdfd": "4486 + SC26: SC25 + step-drummer on the MIDI tracks (pad 30: 8 step pairs on the knobs, per-lane pitch as an offset on a destination, velocity per pair)",
+  "43ea716e6e6a581a74a5bf47c358f1c7d6937d851c6693804496fb8387079e6d": "4486 + SC27: SC26 + step-drummer on Synth 1 / 2 (macros), Octave and 1-16/17-32 LEDs, white step knob, rows off when closing, two more knob pages",
+  "3dfc7fbc06d7188c7a0e45b3c78a50c5f0b91edcdc5b456071b548afcb93d3f4": "4486 + SC28: SC27 + in/out NRPN for the extra drum parameters (MSB 5-8) and Master FX (MSB 9, channel 16)",
+  "d158b68664be82bb06b8b1cb1fe1693d312e6c30d0a0264b66908ade55ea800e": "4486 + SC29: SC28 + VA-drum engine on the MIDI tracks (fourth state of pad 27: three decay envelopes, noise, pad 31 velocity to envelopes)",
+  "c6ddb16e7b460df6726e03081b77bfcfc2467eba60dc76009794d1be73141e18": "4486 + SC30: SC29 + Master FX across sessions + project saving fixed (test)",
+  "a9a6dcaf71bc7745600a2b6d831a354bb29d90f19ce0dc22b69f8fd47e8e0b0a": "4486 + SC31: SC30 + the step-drummer keeps the notes (test)",
+  "67e23e3e418594ec3fe01cdbea853ba9a8a3dac578fefe1530b5171e7b2e3595": "4486 + SC32: SC31 + new song pointer in Master FX (retrigger, phrases, no pad 7) (test)",
+  "6b4b2a836792a79dd1dc3f2e1559188e3dd989a36f6fc1831db474203ec12c8f": "4486 + SC33: SC32 + captured sample in Master FX (pad 32 records, pad 7 plays) and real-time step-drummer recording (test)",
+  "74ef1023691b37cbede33787e53750787cd92491e2445ecf865b1b7d7e47f753": "4486 + SC34: SC33 + sample assignable to the bottom row, capture in the FX view, K2 by colours and replace a drum with the capture (test)",
+  "d8fa43d1cf65d94e3d791f8e9f6419d8841fa511058fda0d3c55663a859d248e": "4486 + SC34D: DIAGNOSTIC (DO NOT USE: breaks pack duplicate), SC34 + its own file next to each session on the SD",
+  "41ca9e01f29947040e4dab2c10b23e7b86c7323117be04d93c8a1748fbe12326": "4486 + SC35D: DIAGNOSTIC of the DSP's second core (MIDI dump with pad 9)",
+  "887a6026ddf443b58172ac337c3791abbf492ae97beee3d8201c073a381c6237": "4486 + SC35D.1: DIAGNOSTIC of the DSP's second core, v2 (MIDI dump with pad 9)",
+  "7ce523e79f56f6189c8716960cfe1bce32e8bed062a779212ea76628c20cd774": "4486 + SC35D2: DIAGNOSTIC, map of the DSP's external memory (read-only, MIDI dump with pad 9)",
+  "f401d4ed95c365800471157991c694a8da68cdc317fb251279a993e88eda9b2a": "4486 + SC35D3: DIAGNOSTIC, candidate zones of the DSP's external memory (read-only, MIDI dump with pad 9)",
+  "c0705a7827e036bd68ef0a46decfcb9d1f6364c4d950de77f84bcf45dc8041f7": "4486 + SC35D4: DIAGNOSTIC, read-only SD access through the stock API (samples 0-7 of the pack, MIDI dump)",
+  "0d9c322edb5d99962beb42dd69d98c4bf5e94827ac5d95c46f03eb6a573124e6": "4486 + SC35D5: DIAGNOSTIC, read-only SD access, PCM samples 0-7 of the pack (type 4)",
+  "058093a9f8f0a91363547029deabde89aee11ecd68ab1f3bd0527634ba566f86": "4486 + SC35D6: DIAGNOSTIC, rewrites the first 21 bytes of a pack sample unchanged (Shift + pad) and reads it back",
+  "aba1091c85775f6e7e00974f984f77eca4094a4dce35d09985484634796606b0": "4486 + SC35D7: DIAGNOSTIC, pads 17-24 rewrite the first 21 bytes of samples 0-7 unchanged and read them back",
+  "867834b651cb8bd39f34550c8f53971ae3158eca2cc897ee6f2da914cf9ecc50": "4486 + SC35D8: DIAGNOSTIC over USB SysEx (tools/ctremote.py), plus the SC35D7 pads",
+  "aa3425b6fecebf49c1c129b1883d10b936c5a0f97a85da690766201134f8eb15": "4486 + SC35D9: DIAGNOSTIC over USB SysEx + delete one item from the pack (types 2-6)",
+  "12dce7c82f3c47e68c879107f6d7c47895ecc7a8813b51dce0730fdfc36cd3e1": "4486 + SC342D: DIAGNOSTIC = SC34.2 + remote diagnostics (SD and DSP memory over USB SysEx)",
+  "9a2d4eed83bf5b4babc1aea7f96f414355ae42c25bf48a9f014ddaa0a0b96e3d": "4486 + SC35DA: DIAGNOSTIC = SC342D + delete a whole pack (not the current one) over USB SysEx",
+  "3eae83c6562aa5e12b2d04d822c97df384b1b126e91eabf68335e5aa2a25fb94": "4486 + SC35: SC34.2 + pack samples on the SD (save the capture with Save, swap two samples, delete a pack)",
+  "d45b6feaa0cfe3bee2272918d0e2eab0b0f1ee189610543f2f08c33d67377e9b": "4486 + SC35DB: DIAGNOSTIC, core 1 audio blocks to core 0 of the DSP under granular load (for the granular synth), remote",
+  "0a429c329fb38176223fbf785d692c168c65000576f9e68b46044c0751104a07": "4486 + SC36: granular synth on MIDI 1/2, Glitch on pad 31 of Master FX / FX and effects sequencer (DSP core 1)",
+  "f4cfad46d7cffda4791eb4d2c1988c01ad44ba144f32cd9bf37d4e18b4ac2ba0": "4486 + SC36.1: SC36 without USB diagnostics + Glitch assignable to the bottom row and effects sequencer with the bottom-row slots (one value per turn, colours)",
+  "f8d646fbb1788a855dfad14894054446e1f156199ae3496e26c951eb7b3d2bf3": "4486 + SC361S: SC36.1 with no writes of its own to the SD (no packio or remote diagnostics) - safer version",
+  "b99b505115c4db3e9a81d7dd1db32722ccc7827f7e7c7cf39af1182a5547de4b": "4486 + SC36.2: SC36.1 with the effects sequencer knob fixed (fine position, ~16 steps per bottom-row slot, effect colour)",
+  "1c2b28785ed4c4ec21dab8cbd16659bdc8da6ff5a0ea374209198c9c56331414": "4486 + SC362S: SC36.2 with no writes of its own to the SD - safer version",
+  "5a13f8be9827d02a8e4dc07123721f23192222a8f4f97bdf0f4c5e132495a87d": "4486 + RC0: first release candidate (= SC36.2)",
+  "7b20bf336faff2dc0c4133047ddcb702663877605d3a54af36ab758efe5f56d8": "4486 + SC37.3: click-free sample swaps (the files are moved as they are)",
+  "26ff69b59a325bfb9b250d7a5d7adeb1f8f65b5cabba24c95802b3fd6d0dec59": "4486 + SC37.4: Duplicate in synth / drum Preset, copy between packs, double Glitch without copying knobs, click-free envelope, Vinyl and return colours",
+  "dea625dda36e48ed494839063671996f60d92a889072a52eb72f3fdcd2f68244": "4486 + RC0.1 (= SC37.4): second release candidate",
+  "0f1711639a4c640612acdddaedc9c504effe0ed5d67c0b9bb2f6c33169c9178b": "4486 + RC0.1S: RC0.1 with nothing of its own writing to the SD (RC0S + the SC37.4 work kept off the SD)",
+  "2d835b3efee2ec7988bf31831003ea7733f08ce49f3007b93cdca207e2c8eb54": "4486 + SC37.5: simulated overload in the Glitch (K4 up) and Clear LED when deleting packs",
+  "d09f88383067ce40667a6333fa057f4fcd291299733def5f0a02de50248ee73a": "4486 + RC0.2 (= SC37.5): third release candidate",
+  "2710e58f48e796f4737a095b2891c2074fae2d52f7d94075862cc3575d453ccf": "4486 + RC0.2S: RC0.1S + the Glitch overload (nothing of its own writes to the SD)",
+  "c761dc64417bba4c0740be470d7cc694e4f4b3eaf1632dce5666c84c579b6984": "4486 + SC37.6: Clear + pad replaces with the capture (Shift + pad is stock again); import memory and source view protection",
+  "976432efddbe146c17922e20a38a76c8c118a48c525d8b12e8efc65f30613f88": "4486 + SC37.7: the copy between packs goes to the replaced sample's slot if it fits; import memory resets when nothing uses it",
+  "217de3d35c9a3686d305e088483eab3ed0ce443af144a5d5563cea6c48ef3e1b": "4486 + SC37.8: packs view: packs blink and return to their colour when deleted, fixed white Clear",
+  "1960b2d484060b1a56c604d73a711bb91309fb3c23df4f37231296c2b80306b5": "4486 + SC37.9: blue for Clear + knob on drums as in the original; Clear + knob in Master FX returns to the default value",
+  "569c35175d8e6b9450c30708ed9950f914697c23f79c4300882a2d435c714c51": "4486 + SC38: Mixer, Shift + knob right = level 100, left = 0",
+  "1482268404c5e8f6736ca5095304ade854267c11db2bf0ccdc5cd686c59cfb12": "4486 + RC0.3 (= SC38): fourth release candidate",
+  "1e9a53d15f666b9cc0a12df427e93f10f09463bb45546d00640a731e37c3a524": "4486 + RC0.3S: safer version of RC0.3 (nothing in the mod writes to the SD)",
+  "6bd58380dd9823ed2d26e785692975d0fa6f404d7f06bbfbddad0149ed9a0278": "4486 + SC38.1: granular stretch (Shift + K6 third mode; K3 = steps)",
+  "9d6ecebdda41e871472d6997eedafa66e7d8afab250f583df78d70b7cd5dd741": "4486 + SC38.2: capture armed from Play (exactly one bar)",
+  "767901bc21ea94463405777bbfb1a434688d8c377eb9bd73f612fd02bb27c85e": "4486 + SC38.3: MIDI Thru with Merge and Filter modes (Advanced Setup, Duplicate)",
+  "77b087fc1185649830d526d5f04c17babb517b8721d83c5be9a07f4609fcca0a": "4486 + SC38.4: capture armed from Play, Duplicate into empty slots between packs, fixed Clear in the packs view",
+  "492c2d1235f98af64099748bd6a3d810948f80f53098d6093d6566dc8d24eeaf": "4486 + SC38.5: Shift + pad 7 = latched loop; patch slots with the Initial Patch",
+  "2292ba05159362df2f38cbb8489c332241dd8fba42cef65d04431325ed44a659": "4486 + SC38.6: SC38.5 with the intermediate patch slots empty (0xFF, like stock)",
+  "01a705a96d58547f287711910dc8f590c3cd23f41877a79c805eaa9593bb2b7d": "4486 + SC38.7: Clear + pad 27 on MIDI 1 / 2 = all engine values back to their initial ones",
+  "6acec1a0ae8393464f6b0be8c4bed325aaa8d3e3c921439048a40b33071e0410": "4486 + SC38.8: synth patches coloured by voice mode (mono dark blue, glide purple) + Advanced Setup without pads 22 / 23",
+  "0b5018a85ffaacdf40c19db02981ace229a3c86b9622ba456976f4e7840c378e": "4486 + SC38.9: Synth 1 + Synth 2 together = split keyboard (pads 1-16 Synth 1, 17-32 Synth 2)",
+  "d3cc136c4ade4dbff7a40807d5a789d4b3b8adc3c3c4d15e3b5ff13d3cc94b50": "4486 + PATCHD (diagnostic): SC38.9 + rdiag to test the patch padding",
+  "49f17a79534cb1c0836188563ec4a4b793eff31ab5191fa1257015525c50ec73": "4486 + SEQWD: DIAGNOSTIC (SC38.9 + rdiag + DWT watchpoint: which code reads a pattern step)",
+  "acdc68af7dbe3cd152354682e7141a644c328955a8d202c48ab6329f7daec7c9": "4486 + SC39: per-step random-mutate (row 4 of the probability view) + glide patches in a fixed colour",
+  "694b0a09d2abc8d11dd944db42944f9a5651afa05503052a0403dcd35bd157a2": "4486 + BETA1: second beta (= SC39): BETA0 + patches by voice mode, split keyboard, random-mutate",
+  "4c5bbb73b58839550a5cdfaaa35c6888613de55dc49ad1099601fff182e93520": "4486 + SC39.1: custom synth patches (MIDI 1 / 2), Clear + page pad, granular source selector",
+  "464900cb8f452f5715a505b040048e9e4dc00f8f933a6a13eb9e8553d40b2fb3": "4486 + BETA2: third beta (= SC39.1): BETA1 + custom synth patches, Clear + page, granular source selector",
+  "f8b8f764972217e487f86f9c9246716d1c257690952b263632b2068dd2474df9": "4486 + RC0.6: seventh release candidate = RC0.5 + two fixes (Auto-Filter / Phaser LFO when enabling the effect, fixed dim white)",
+  "59e3cca7142e85c5881ce59c9793a5847c854b93962510307b7179fad6f04dc9": "4486 + RC0.6S: safer version of RC0.6 (nothing in the mod writes to the SD)",
+  "38a1f4e38a2851103435f5226fcda665632da4fd419212782e0fe3cbe7d51e69": "4486 + RC0.5: sixth release candidate = RC0.4 + the captured sample ahead of the Master FX effects",
+  "fb3c2e4a866e64ad77a22ee9f61ec62981399ef8fb2af7c6f59b3f0a6f6529e3": "4486 + RC0.5S: safer version of RC0.5 (nothing in the mod writes to the SD)",
+  "67b8426c011be0ccdef087ac265a21c65958091527c108e1f53f32ab05325774": "4486 + SC41: SC40.9 + the step-drummer's pitch knobs keep their value",
   "f9c8e2ea32c048fa2d6cae1354d01eb5cc7b5f920132f04adf25e91198ac48f2": "4486 + Beta 1.1 (B1.1) = SC41.1",
-  "74f26e9cd1c8575cc6b7d53520b3f39684fe640615be00d0f71e0e79f9205bb3": "4486 + SC41.7: SC41.6 + K3 de drums partido (decay / ataque, inicio / corte) + Clear + pad 25",
+  "74f26e9cd1c8575cc6b7d53520b3f39684fe640615be00d0f71e0e79f9205bb3": "4486 + SC41.7: SC41.6 + split drum K3 (decay / attack, start / cut) + Clear + pad 25",
   "2e63828a3f8b88f2690d9e230f295f606954de184e1ecc7ca83414a5d0d40db1": "4486 + Beta 1.7 (B1.7) = SC41.7",
-  "423b09854128f766a1be3d9d119d433485b03d88c41e60b62b97f4e3fc6c8ed3": "4486 + SC41.8: SC41.7 + metrónomo en cuatro estados con cuenta atrás",
+  "423b09854128f766a1be3d9d119d433485b03d88c41e60b62b97f4e3fc6c8ed3": "4486 + SC41.8: SC41.7 + four-state metronome with count-in",
   "edc087da36ab8c17a2314153f8d371805436bf7e1ce74bb5aadf4a90608dbadd": "4486 + Beta 1.8 (B1.8) = SC41.8",
-  "969c40cb989564d027e9c677142b645ac9c236900be83d17f13e511c488558ae": "4486 + SC41.9: SC41.8 + arpegiador en las pistas de notas",
+  "969c40cb989564d027e9c677142b645ac9c236900be83d17f13e511c488558ae": "4486 + SC41.9: SC41.8 + arpeggiator on the note tracks",
   "607ee35e0f0e2316001c5564c2b675a53ce3cd208d9b14340cbd3521a8b853ea": "4486 + Beta 1.9 (B1.9) = SC41.9",
-  "ddd77df2573f8d1b5fb15c8580d35528475562988b64e84b609a10f10b5f8a63": "4486 + SC419D (diagnóstico): SC41.9 + testigos del stutter (Save / Duplicate / Play)",
-  "524917a2ebe122fce07505b41a471850ef83ef4574a7a00d939587dd7802774c": "4486 + S419D2 (diagnóstico): SC419D + el culpable de cada retraso en el color de Duplicate",
-  "92fcc0d38bd39d7d636b330c56a77c772b174f1d847401710b94293cc82e082d": "4486 + SC42: SC41.9 + guardado de ajustes diferido (stutter del delay)",
+  "ddd77df2573f8d1b5fb15c8580d35528475562988b64e84b609a10f10b5f8a63": "4486 + SC419D (diagnostic): SC41.9 + stutter witnesses (Save / Duplicate / Play)",
+  "524917a2ebe122fce07505b41a471850ef83ef4574a7a00d939587dd7802774c": "4486 + S419D2 (diagnostic): SC419D + the culprit of each delay in the Duplicate colour",
+  "92fcc0d38bd39d7d636b330c56a77c772b174f1d847401710b94293cc82e082d": "4486 + SC42: SC41.9 + deferred settings saving (delay stutter)",
   "8d606bd71039ce1a49219bace8ad3b9afbbad05ac8128095298cf9584c02e8d3": "4486 + Beta 1.10 (B1.10) = SC42",
-  "4e313be9edb4d2ff34baf44c158b07e8da4b6c98a2d0921d54d8a7b786d810a1": "4486 + RC0.9.3 (R0903) = RC0.9.2 + guardado de ajustes diferido",
-  "285c22041b37a81f67c7955c19818705c8672b0fdd34914077973fe9e5d47039": "4486 + RC0.9.3S (R0903S) = RC0.9.2S + guardado de ajustes diferido",
-  "ddcff651cf666c55bb23d146b05a4f3ae47cbbe83617204ce9dea6554813c99a": "4486 + SC42.1: SC42 + sin relecturas de la tarjeta mientras suena",
+  "4e313be9edb4d2ff34baf44c158b07e8da4b6c98a2d0921d54d8a7b786d810a1": "4486 + RC0.9.3 (R0903) = RC0.9.2 + deferred settings saving",
+  "285c22041b37a81f67c7955c19818705c8672b0fdd34914077973fe9e5d47039": "4486 + RC0.9.3S (R0903S) = RC0.9.2S + deferred settings saving",
+  "ddcff651cf666c55bb23d146b05a4f3ae47cbbe83617204ce9dea6554813c99a": "4486 + SC42.1: SC42 + no SD re-reads while it plays",
   "d61c786e983edf8bce492d1c116bf6be342cbc364713d4c6c009355e2efacf0d": "4486 + Beta 1.11 (B1.11) = SC42.1",
-  "b95c9b648fb30c2087574bcc061dae60d844ba9be6310fe58219a019b451f68c": "4486 + S421D (diagnóstico): SC42.1 + los testigos de S419D2",
-  "205161dfe22d52bc9bb04df2d4b8356a90ea721270a216024da576c16b94d1c3": "4486 + R0903D (diagnóstico): RC0.9.3 + los testigos de S419D2",
-  "be81af85b1c0be40202be1fefc5847c8a5153c0c1f75df31873eabdd21d92ee7": "4486 + SC42.2: SC42.1 + escala propia (Shift + Scales)",
+  "b95c9b648fb30c2087574bcc061dae60d844ba9be6310fe58219a019b451f68c": "4486 + S421D (diagnostic): SC42.1 + the S419D2 witnesses",
+  "205161dfe22d52bc9bb04df2d4b8356a90ea721270a216024da576c16b94d1c3": "4486 + R0903D (diagnostic): RC0.9.3 + the S419D2 witnesses",
+  "be81af85b1c0be40202be1fefc5847c8a5153c0c1f75df31873eabdd21d92ee7": "4486 + SC42.2: SC42.1 + custom scale (Shift + Scales)",
   "44a3cc4700071fb83a529d3cb212048322951ca2dd6b0617cbd3cdbbd891189d": "4486 + Beta 1.12 (B1.12) = SC42.2",
-  "4a6ab673ea3b8fff61607b67a2ff6dea8ace00df243967492fe563b0a174c322": "4486 + SC42.3: resolución del arpegiador, gate por pulsación, colores del metrónomo",
+  "4a6ab673ea3b8fff61607b67a2ff6dea8ace00df243967492fe563b0a174c322": "4486 + SC42.3: arpeggiator resolution, gate per press, metronome colours",
   "f4841675ff5dc822e41467c1b79518be79d4515c615ce8a69f9d9db638dade4c": "4486 + Beta 1.13 (B1.13) = SC42.3",
-  "b282b80ebc629a6763985931180d8857139ca216ef8badb68fb08776efb8195a": "4486 + SC42.4: rollers de micropasos, Clear lavanda / rojo, borrado de automatización del sinte propio",
+  "b282b80ebc629a6763985931180d8857139ca216ef8badb68fb08776efb8195a": "4486 + SC42.4: micro-step rollers, lavender / red Clear, custom synth automation erase",
   "035215e7584c0eb86a4106955f5437caaca86a29d9e3b93eba48bdb7393145e8": "4486 + Beta 1.14 (B1.14) = SC42.4",
-  "fd52b1b5a04c6158d843735f782551bd9b7691caa29b4bfb6ff6cd0ac9361914": "4486 + SC42.5: arreglos tras SC42.4, sidechain de drums, Preset otra vez",
+  "fd52b1b5a04c6158d843735f782551bd9b7691caa29b4bfb6ff6cd0ac9361914": "4486 + SC42.5: fixes after SC42.4, drum sidechain, Preset again",
   "7b0e0c731ac745a95bfe1eaffbcb968641bdece7a7f223f8d069cff9d4a018a9": "4486 + Beta 1.15 (B1.15) = SC42.5",
-  "d2400ff496942f87b71883b46a5cf615be7baa692d0cc4f6d851eb7c9488b2c0": "4486 + SC42.6: step-drummer, destino de la pagina 2 y toggle pitch-vel",
+  "d2400ff496942f87b71883b46a5cf615be7baa692d0cc4f6d851eb7c9488b2c0": "4486 + SC42.6: step-drummer, page 2 destination and pitch-vel toggle",
   "41ad56af347441e074135dacd1dfc685ad9b5b4bd90e7cd155bdae49307aa800": "4486 + Beta 1.16 (B1.16) = SC42.6",
-  "7321e380b42e38535f8b7469d31bfbb59e817b512ff037bec562704178819ed5": "4486 + SC42.7: step-drummer desde 0, toggles de Micro Step, rollers parados",
+  "7321e380b42e38535f8b7469d31bfbb59e817b512ff037bec562704178819ed5": "4486 + SC42.7: step-drummer from 0, Micro Step toggles, stopped rollers",
   "71835b0a10fe76e45cb0a18c7ebd2ee0e4ddd6e4e4ec8b0c60810db7668f1f44": "4486 + Beta 1.17 (B1.17) = SC42.7",
-  "ff27a337f733d486d6e44019c176fca0c92e36115be73685b9903cfcdccfa7de": "4486 + SC42.8: arpegiador de los drums",
+  "ff27a337f733d486d6e44019c176fca0c92e36115be73685b9903cfcdccfa7de": "4486 + SC42.8: drum arpeggiator",
   "d8a075e3ad1f864603d96a47c9f25b7881b51411b52df3933a2e680f0159e02b": "4486 + Beta 1.18 (B1.18) = SC42.8",
-  "a608eb5329fcb4d95e12a9f6fdc18ff235f7e55ec69a666560b64ade2cd9caf1": "4486 + SC42.9: el arpegio de los drums se graba",
+  "a608eb5329fcb4d95e12a9f6fdc18ff235f7e55ec69a666560b64ade2cd9caf1": "4486 + SC42.9: the drum arpeggio is recorded",
   "1bfc414c9b2c1db4ba1fc9b5600b98e75aa9272ba278fc214317ea46718d2f90": "4486 + Beta 1.19 (B1.19) = SC42.9",
-  "8eaa45d492dee434d31b7d85154c3d5bd228691e216c982a47fee2578857567d": "4486 + SC43: Pattern Settings en los drums, arreglos de grabacion",
+  "8eaa45d492dee434d31b7d85154c3d5bd228691e216c982a47fee2578857567d": "4486 + SC43: Pattern Settings on the drums, recording fixes",
   "d0ba51f049447797d69eace9a1b97b47bb1abfd505270c76bbf1f12af6a12d0e": "4486 + Beta 1.20 (B1.20) = SC43",
-  "c1eda34f42968c272943f386032344b1e1829bbcb882d8429023b7578ffc4c9f": "4486 + SC43.1: note-off de los golpes parados de rollers / arpegio de drums",
+  "c1eda34f42968c272943f386032344b1e1829bbcb882d8429023b7578ffc4c9f": "4486 + SC43.1: note-off for stopped roller / drum arpeggio hits",
   "094557f4f6a577204c7061554136fac2f5b285c641316aa3788356401e6e31c0": "4486 + Beta 1.21 (B1.21) = SC43.1",
-  "94f1aca87a3901fea711be7b1f8b320e6d8c75963c10ad1e12eb9380a318cff9": "4486 + SC43.2: note-off del grabador para las notas del arpegiador",
+  "94f1aca87a3901fea711be7b1f8b320e6d8c75963c10ad1e12eb9380a318cff9": "4486 + SC43.2: recorder note-off for the arpeggiator notes",
   "d89ecf65ff3e0619d97151d6d914457fbc9f8c92907cf431a3ce9b5055a9328a": "4486 + Beta 1.22 (B1.22) = SC43.2",
-  "5bdecb997ed029542a6a7b4f03f25781a0192646ca2ba3b10fca54d3d6d5f210": "4486 + SC43.3: step-drummer de MIDI desde el punto sin modulacion",
+  "5bdecb997ed029542a6a7b4f03f25781a0192646ca2ba3b10fca54d3d6d5f210": "4486 + SC43.3: MIDI step-drummer from the point without modulation",
   "47da7f38c383ed975103b932ec3fef10c4cc1d419992a98a226449b4419db1c6": "4486 + Beta 1.23 (B1.23) = SC43.3",
-  "b888d1878f814c79ed5c2273bfdbda4b8d7f493d56f07c04109582da2d95f2e6": "4486 + SC43.4: sidechain por patrones, mute al compas, Clear + drum",
+  "b888d1878f814c79ed5c2273bfdbda4b8d7f493d56f07c04109582da2d95f2e6": "4486 + SC43.4: sidechain per pattern, mute on the bar, Clear + drum",
   "b208d2835b7e6c31a342469746d29c784c4db989a005fc6a40c0d35fd19efd2b": "4486 + Beta 1.24 (B1.24) = SC43.4",
-  "0a1bbf9ae0085c5981695f412b658c08b6fdbc54db061c077ab1487d874d89ca": "4486 + SC43.5: pitch de drums cromatico + continuo, Clear + Synth",
+  "0a1bbf9ae0085c5981695f412b658c08b6fdbc54db061c077ab1487d874d89ca": "4486 + SC43.5: chromatic + continuous drum pitch, Clear + Synth",
   "745cb4ab6e537fc2739508a78b78d01354bfa71465bb20f7701e556547944784": "4486 + Beta 1.25 (B1.25) = SC43.5",
-  "b9d0bc65d1f2e4828bd7c7eb371bfe4fec5e6f6a7727b1cb548136c46fccc655": "4486 + SC43.6: modo cue del Mixer, grabacion por paso de la vista cromatica",
+  "b9d0bc65d1f2e4828bd7c7eb371bfe4fec5e6f6a7727b1cb548136c46fccc655": "4486 + SC43.6: Mixer cue mode, per-step recording of the chromatic view",
   "4406e3319ec4ace4a0a576396bcacd977997800036fbba2a47d91f3557010810": "4486 + Beta 1.26 (B1.26) = SC43.6",
-  "ef26cab41fe5475ead81f2b491ac3ddc92440f3c6b395be72dc3ebb5836cfdba": "4486 + SC43.7: pitch de drums continuo y cromatico, Clear + Drum, Shift + Play cuantiza",
+  "ef26cab41fe5475ead81f2b491ac3ddc92440f3c6b395be72dc3ebb5836cfdba": "4486 + SC43.7: continuous and chromatic drum pitch, Clear + Drum, Shift + Play quantises",
   "455c5f038ec6558039b3f9fc5cd53b45f15198f2c292a10c3f673b73acf0edb8": "4486 + Beta 1.27 (B1.27) = SC43.7",
-  "f98932adf8c07f5b010c33fb28bc78262530de9848d5a856c2bcf24dfada6636": "4486 + SC43.8: sidechain de drums con Synth / MIDI, sinte propio guardado entero",
+  "f98932adf8c07f5b010c33fb28bc78262530de9848d5a856c2bcf24dfada6636": "4486 + SC43.8: drum sidechain with Synth / MIDI, custom synth saved whole",
   "d69b5e5a959e6ca936bd03817429a830d7da1ea5e5b5a56f5c1233325fba33cc": "4486 + Beta 1.28 (B1.28) = SC43.8",
-  "d6a9565a2ba562ebeaaa3f042c50860bbc8878169ef11a30ab026ad9d8245040": "4486 + SC43.9: formas del LFO del sinte propio, DSP compactado",
+  "d6a9565a2ba562ebeaaa3f042c50860bbc8878169ef11a30ab026ad9d8245040": "4486 + SC43.9: custom synth LFO shapes, compressed DSP",
   "090ca6a0a575ff41b00de99d4b6f09b9153e1f9d30073cdd913ddf1562dc5035": "4486 + Beta 1.29 (B1.29) = SC43.9",
-  "db0850d2c8b90e90c0094413f3edfcb86c965e1ad24527d59563c724333251ac": "4486 + SC44: modo muestra del sinte propio de MIDI 1 / 2, selector y sample flips",
+  "db0850d2c8b90e90c0094413f3edfcb86c965e1ad24527d59563c724333251ac": "4486 + SC44: sample mode of the custom synth on MIDI 1 / 2, selector and sample flips",
   "3cc0b68f0fdc76d068041ea6d4bb761077a84da8e7c6eb1613872ae3d480c1cb": "4486 + Beta 1.30 (B1.30) = SC44",
-  "8093c57e8b67d46e3eb2f3981c6f1ef5ae5681914843c146ebd31162ceb91742": "4486 + RC2 = SC44 (segunda versión candidata)",
-  "77db259bedc8687e2cb544256905055e73f0b7b78c27e4b69af72558ba0bd418": "4486 + RC2S = RC2, versión más segura (nada del mod escribe en la SD)",
-  "03d21f407274f03eedbd20e762a5e9347aa71a04fc9750b4d4b2105398ea59c8": "4486 + SC44.1: el sample capturado antes del filtro master",
+  "8093c57e8b67d46e3eb2f3981c6f1ef5ae5681914843c146ebd31162ceb91742": "4486 + RC2 = SC44 (second release candidate)",
+  "77db259bedc8687e2cb544256905055e73f0b7b78c27e4b69af72558ba0bd418": "4486 + RC2S = RC2, safer version (nothing in the mod writes to the SD)",
+  "03d21f407274f03eedbd20e762a5e9347aa71a04fc9750b4d4b2105398ea59c8": "4486 + SC44.1: the captured sample before the master filter",
   "c8cec0b7d759a5574513c533334492baa25c60384f17300899eddf050ac5b541": "4486 + RC2.01 (R201) = SC44.1",
-  "c547d6e3c313c0d50e04506633debd17afe6552a6666c04b30ab7785ec42b788": "4486 + RC2.01S (R201S) = RC2.01, versión más segura",
-  "73eafc6cede38b11e9769967eaeab5dc90f1e959cca9e6e05e16a0526d7468f3": "4486 + SC44.2: matriz de modulación del sinte propio, teclado partido con cualquier par",
+  "c547d6e3c313c0d50e04506633debd17afe6552a6666c04b30ab7785ec42b788": "4486 + RC2.01S (R201S) = RC2.01, safer version",
+  "73eafc6cede38b11e9769967eaeab5dc90f1e959cca9e6e05e16a0526d7468f3": "4486 + SC44.2: custom synth modulation matrix, split keyboard with any pair",
   "082945f6c2a150a0dbbd23289d955852e734958bf0a0f4e2e91dfd9e601569e0": "4486 + Beta 1.31 (B1.31) = SC44.2",
-  "9c16279a2be0f3acbd792f106ac3ad90cfe38c20ea9725775c275936c7debffd": "4486 + SC44.3: LFO del sinte propio con el triángulo por defecto y sample & hold suavizado",
+  "9c16279a2be0f3acbd792f106ac3ad90cfe38c20ea9725775c275936c7debffd": "4486 + SC44.3: custom synth LFO with triangle by default and smoothed sample & hold",
   "a29350b9a3ea69f74aa438a0fc008b206f730430811273f3c59a0f692609e8e4": "4486 + Beta 1.32 (B1.32) = SC44.3",
   "e1399cdee28e2604fd842b56ed802727396d1de097d401f48026a76e1bc7c1f7": "4486 + Beta 3.0 (B3.0) = SC44.3",
-  "f2d3fe749737ce5ebfcbd51d4235c2cd5f819f6cf5b655d6d1edb4cdc170f128": "4486 + SC44.4 (resonancia del filtro master en Shift + Octave)",
+  "f2d3fe749737ce5ebfcbd51d4235c2cd5f819f6cf5b655d6d1edb4cdc170f128": "4486 + SC44.4 (master filter resonance on Shift + Octave)",
   "bdc4b21b61409510c91c2e385c46add3f3b8a5445c513eb8c2037bdf82fb0665": "4486 + Beta 3.1 (B3.1) = SC44.4",
-  "76767dd37735e127b110550572a779f47c4ca4b6fd9c8070b716779bfb9c122f": "4486 + SC44.5 (filtro master apagado / encendido en Shift + pad 25 de la vista FX)",
+  "76767dd37735e127b110550572a779f47c4ca4b6fd9c8070b716779bfb9c122f": "4486 + SC44.5 (master filter off / on on Shift + pad 25 of the FX view)",
   "64cd1db79baf713ec779dc0138205f08813eeec44767e8789aec174e7f761197": "4486 + Beta 3.2 (B3.2) = SC44.5",
-  "03626f2325e529e21a3da1d746a9242c4c77b8c28f0971008ad67fa108204a67": "4486 + SC44.6 (el filtro master apagado no se mueve)",
+  "03626f2325e529e21a3da1d746a9242c4c77b8c28f0971008ad67fa108204a67": "4486 + SC44.6 (the master filter off does not move)",
   "d21604126d176db7a4da7e53275f40c79749612de8771ff208d8d84f98d229c2": "4486 + Beta 3.3 (B3.3) = SC44.6",
-  "4093fa418db3d8a2d279bdb3b7a2950ac0a2682df42f642f39246a77aa496150": "4486 + SC44.7 (granular en estéreo)",
+  "4093fa418db3d8a2d279bdb3b7a2950ac0a2682df42f642f39246a77aa496150": "4486 + SC44.7 (stereo granular)",
   "b870d9514a564920fb5c588e2d9398c3300e7e5bd5174e3c3b2e7807eb470794": "4486 + Beta 3.4 (B3.4) = SC44.7",
-  "82c867aeed40d32e432ac5b74aaed46577e87f401f4d10068463aed514b4d24b": "4486 + SC44.8 (LFO a tempo)",
+  "82c867aeed40d32e432ac5b74aaed46577e87f401f4d10068463aed514b4d24b": "4486 + SC44.8 (LFO to tempo)",
   "569691e22a285604ebb776464c1fff369358229839287d6c6dc8cff5dd1ad976": "4486 + Beta 3.5 (B3.5) = SC44.8",
-  "6484d0f5559a024c7c46b582965713b6ed12f2d3b2a9e2ab365bc6a63bb58aa5": "4486 + SC44.9: destinos de la pagina 4 del motor MIDI con Shift + knob, guardados con el patch; Record + paso = foto de los valores",
+  "6484d0f5559a024c7c46b582965713b6ed12f2d3b2a9e2ab365bc6a63bb58aa5": "4486 + SC44.9: page 4 destinations of the MIDI engine with Shift + knob, saved with the patch; Record + step = snapshot of the values",
   "6abb9ffae4fde8fc36622bd303a50f040eaed2bd6af2342d5b30d3b8c536c964": "4486 + Beta 3.6 (B3.6) = SC44.9",
-  "d575671f5b607ae484d75098b713d67e2b053c092071eca9caf86883f2694940": "4486 + SC45: Velocity + Shift + paso = soltar la automatizacion (vuelve al knob); pad 27 de MIDI = fila de motores",
+  "d575671f5b607ae484d75098b713d67e2b053c092071eca9caf86883f2694940": "4486 + SC45: Velocity + Shift + step = release the automation (back to the knob); MIDI pad 27 = engine row",
   "be0ca9e7a903f35c5a4b44fc936c589852cb9095db65448f02bdb1f1348e7f51": "4486 + Beta 3.7 (B3.7) = SC45",
-  "bb687b1ccf3ef5b7207898fb25455c63f4e983f3f6d7d9f1b4748f90fded9c82": "4486 + SC45.1: con la grabacion de los ruteos internos, nada se graba en una pista de notas silenciada en el Mixer (banco de acordes)",
+  "bb687b1ccf3ef5b7207898fb25455c63f4e983f3f6d7d9f1b4748f90fded9c82": "4486 + SC45.1: with internal routing recording, nothing is recorded on a note track muted in the Mixer (chord bank)",
   "435bc55d472171540258ea253a7f8c945fdcabbf3cf46f2f01feb2232178997a": "4486 + Beta 3.8 (B3.8) = SC45.1",
-  "014c09868c44566585875040e5e6da2fa992702a59f2127afeef8f46b5e36924": "4486 + SC45.2: en el Mixer con Shift, la repeticion de escena que suena (blanco; la ultima parpadea)",
+  "014c09868c44566585875040e5e6da2fa992702a59f2127afeef8f46b5e36924": "4486 + SC45.2: in the Mixer with Shift, the scene repeat that is playing (white; the last one blinks)",
   "831074dc60113f721f911221d0f0c7cb71ff270fcb085ad06ffbc9f3178bf098": "4486 + Beta 3.9 (B3.9) = SC45.2",
-  "ac45fbaad9ddbabfd0924da65d22282a32f928d9a9f8148aced663cdcfd7e8e9": "4486 + SC45.3: notas largas al grabar, sample mantenido + paso; arpegiador en orden pulsado y con random-mutate",
+  "ac45fbaad9ddbabfd0924da65d22282a32f928d9a9f8148aced663cdcfd7e8e9": "4486 + SC45.3: long notes when recording, held sample + step; arpeggiator in pressed order and with random-mutate",
   "0ebcf08b3450b6bf4c5acfae2c48e54776cf8f552a8127a06a2d82009b14e690": "4486 + Beta 3.10 (B3.10) = SC45.3",
-  "01974049305f1c94e04b00a04a33cb5b99326c0efe1fb516c68e2de973f1924a": "4486 + SC45.4: random-mutate en el arpegio en vivo",
+  "01974049305f1c94e04b00a04a33cb5b99326c0efe1fb516c68e2de973f1924a": "4486 + SC45.4: random-mutate in the live arpeggio",
   "ea44e18bc816125e134be46f7a27adc6adf3934f6d15c44153e5f64cb2dc28c2": "4486 + Beta 3.11 (B3.11) = SC45.4",
-  "42c812a64c041577ae4d85fd4f8e2ab419e749e113c99eee56dd4dfbf613aa01": "4486 + SC45.5: supersaw en la sierra y triángulo exponencial del motor de MIDI 1 / 2",
+  "42c812a64c041577ae4d85fd4f8e2ab419e749e113c99eee56dd4dfbf613aa01": "4486 + SC45.5: supersaw on the saw and exponential triangle in the MIDI 1 / 2 engine",
   "55ece086fb6fb614caf7c09bbeeed8af91a9224911080cfbbc299aa46fe5c00e": "4486 + Beta 3.12 (B3.12) = SC45.5",
-  "643d5c1ecf7759bc4dc54ace7a004426ed9240aa9e13a2628ed356eed92ca69c": "4486 + SC46: SC45.9 + el sinte propio de MIDI 1 / 2 guardado con el proyecto",
+  "643d5c1ecf7759bc4dc54ace7a004426ed9240aa9e13a2628ed356eed92ca69c": "4486 + SC46: SC45.9 + the custom synth on MIDI 1 / 2 saved with the project",
   "48205fffa7a284e964552ea5d8b4c45a6dc1b30946ef3bd817c7108636ce3caf": "4486 + Beta 3.17 (B3.17): SC46",
-  "8b12e122c2afb1bd396374ea6099a1c2ed432479899b2c607a1172138f766940": "4486 + SC46.1: arreglo de la longitud fija (LEDs del selector, la longitud en toda nota)",
+  "8b12e122c2afb1bd396374ea6099a1c2ed432479899b2c607a1172138f766940": "4486 + SC46.1: fixed-length fix (selector LEDs, length on every note)",
   "78e37aeb8511e14e7b9e09df7576b3c674eaf22a6c2dd5bbe52ad71497b97bfe": "4486 + Beta 3.18 (B3.18): SC46.1",
-  "4f4a88dfd2fa82801eddd8bb18f7fc3b2668649dadd432d1821ec1d391408e23": "4486 + SC46.2: modo General MIDI de los drums (Setup: K4 modo, K5-K8 notas)",
+  "4f4a88dfd2fa82801eddd8bb18f7fc3b2668649dadd432d1821ec1d391408e23": "4486 + SC46.2: General MIDI drum mode (Setup: K4 mode, K5-K8 notes)",
   "ef865a26940b8612430e0e0036e4fe84221f25d9a3daccdaa9b661bdb19908a4": "4486 + Beta 3.19 (B3.19): SC46.2",
-  "1ba755af8691304d87f2a487a0684a694ad68544546b2826730b14ad9475dbe2": "4486 + SC46.3: teclado externo, GM con K4, Jankó, pantalla de acordes",
+  "1ba755af8691304d87f2a487a0684a694ad68544546b2826730b14ad9475dbe2": "4486 + SC46.3: external keyboard, GM with K4, Jankó, chord screen",
   "2428a24ceb1a452edf6183632a73bfe8f0c7578fc620b7bf85800558cb5fca08": "4486 + Beta 3.20 (B3.20): SC46.3",
-  "3ff1a8311a3591154bb866f4a1187836733a5ec026d2e0760a1decb43f12e510": "4486 + SC46.4: el DIN In mezclado en la salida USB",
+  "3ff1a8311a3591154bb866f4a1187836733a5ec026d2e0760a1decb43f12e510": "4486 + SC46.4: DIN In mixed into the USB output",
   "41c1e50319b06417776df945e885b9e3b44328e9365b87a2ba3ff2227bc105d3": "4486 + Beta 3.21 (B3.21): SC46.4",
-  "efb6df13cdbdd8b547081517e6b11d9b987d7819ed55147a30b1c5f767506a50": "4486 + SC46.5: el inicio de los drums arreglado, el K7 a la izquierda = scan del inicio",
+  "efb6df13cdbdd8b547081517e6b11d9b987d7819ed55147a30b1c5f767506a50": "4486 + SC46.5: drum start fixed, K7 to the left = start scan",
   "52ab530467802a7b701e67a9b0f4b530973fdb60caad5c15204c383576dffb3e": "4486 + Beta 3.22 (B3.22): SC46.5",
-  "89c993b6455e159e73775dc4875bd017530503fbe7b4ad91f3c293b658e21bd0": "4486 + SC46.6: el motor FM mejorado",
+  "89c993b6455e159e73775dc4875bd017530503fbe7b4ad91f3c293b658e21bd0": "4486 + SC46.6: improved FM engine",
   "bebf4f17318dd4eedec3d16de3f4b906c13032f02fd292d0d940f0f579918dc2": "4486 + Beta 3.23 (B3.23): SC46.6",
-  "0e67228c15e050c7f37c8edc356176e87b170e88b43955a0b978bdd6e571b973": "4486 + SC46.7: el modo muestra de MIDI 1 / 2 en estéreo",
+  "0e67228c15e050c7f37c8edc356176e87b170e88b43955a0b978bdd6e571b973": "4486 + SC46.7: stereo sample mode on MIDI 1 / 2",
   "ccee6121b9858f760be2e8a1400e3f76e12bcedb424899cf1c6fe24429d321d3": "4486 + Beta 3.24 (B3.24): SC46.7",
-  "7191e27088017d9d72f8f4438d383e4d2d339136820fb208fde7e8e67556962c": "4486 + SC46.8: el segundo sample del estéreo en el selector, la duración del más largo",
+  "7191e27088017d9d72f8f4438d383e4d2d339136820fb208fde7e8e67556962c": "4486 + SC46.8: second stereo sample in the selector, the longest one's duration",
   "16e1dd41f2dc8c8c7a1903bca455b77bdec2172c66e881e53378879df5a8bb6f": "4486 + Beta 3.25 (B3.25): SC46.8",
-  "1adec4d25db9a9516959f6c632ccb59c94a2e1b2cd12abfddc46619e62673d55": "4486 + SC46.9: arreglos (la introducción manual de notas, el FM tras instalar)",
+  "1adec4d25db9a9516959f6c632ccb59c94a2e1b2cd12abfddc46619e62673d55": "4486 + SC46.9: fixes (manual note entry, FM after installing)",
   "5a4c8967c2f4d89f5f0f8bcfe4c72a5d3e976d2914d4a6090ea74f8bc1a485ff": "4486 + Beta 3.26 (B3.26): SC46.9",
-  "f134d2ca60720b071402a084d0f54fd489a6365ca3a0a62d47b08c42e1919cd6": "4486 + SC47: polifonía del sinte propio (oscilador y modo muestra, 4 voces), los lados del sample estéreo",
+  "f134d2ca60720b071402a084d0f54fd489a6365ca3a0a62d47b08c42e1919cd6": "4486 + SC47: custom synth polyphony (oscillator and sample mode, 4 voices), stereo sample sides",
   "6d7e69e9f76cb944c5ad0df47c44cf3ca15731175cf847983da4d47cd9ffb2fe": "4486 + Beta 3.27 (B3.27): SC47",
-  "5ef0412627b99221170275b3ec99809c7acbef532f32b3a8d467503a8b9936d8": "4486 + SC47.1: el estéreo (modo muestra y granular) con la ganancia real de la tira",
+  "5ef0412627b99221170275b3ec99809c7acbef532f32b3a8d467503a8b9936d8": "4486 + SC47.1: stereo (sample and granular mode) with the strip's real gain",
   "13af7009af5785cdbcfdd46db43665f5068643d978a77cf0ff092834d11b9439": "4486 + Beta 3.28 (B3.28): SC47.1",
-  "06c8a0d3a1bf4415c1f420fbb2019b0467ae215dc6c9432b9dcd4f9fcb3b4ba1": "4486 + SC47.2: el paso mantenido y un teclado externo por el arpegiador, Shift + tecla = latch, el arpegiador parado al tempo",
+  "06c8a0d3a1bf4415c1f420fbb2019b0467ae215dc6c9432b9dcd4f9fcb3b4ba1": "4486 + SC47.2: held step and an external keyboard through the arpeggiator, Shift + key = latch, arpeggiator stopped to tempo",
   "a2378b1af41b591807df60e29948e87a27ecd86808ae2db3bfef19c4ee8ec202": "4486 + Beta 3.29 (B3.29): SC47.2",
-  "57603b7aae9eedfc6f2a09e8ea9b3137980c2e5d5fb6fccab696f49e019d5711": "4486 + SC47.3: polifonía también con dos osciladores y en el VA-drum (envolventes por golpe); el DSP compactado",
+  "57603b7aae9eedfc6f2a09e8ea9b3137980c2e5d5fb6fccab696f49e019d5711": "4486 + SC47.3: polyphony also with two oscillators and in the VA-drum (per-hit envelopes); compressed DSP",
   "a61d467625478b8c3993a927cab52ecdd94ddad4848bad00289a8f8702a6c267": "4486 + Beta 3.30 (B3.30): SC47.3",
-  "37da08806c22a709e43496a45a4171870fe6b4e85cfe94bef85fdc61fe450b04": "4486 + SC47.4: FM polifónico (4 voces FM entre MIDI 1 y MIDI 2)",
+  "37da08806c22a709e43496a45a4171870fe6b4e85cfe94bef85fdc61fe450b04": "4486 + SC47.4: polyphonic FM (4 FM voices between MIDI 1 and MIDI 2)",
   "f16d77ca190ae1e0d6e8ad8c75d8b22ab0ed6a7e91507ccdc3a8607c4c74cbc8": "4486 + Beta 3.31 (B3.31): SC47.4",
-  "7b7e59b9bb0294c0e882d2fa5009eb86c23fefc165a0455ef41f7bf90339a32b": "4486 + SC47.5: modo de voz en el pad 32 (portamento, unísono) + el reloj con FM poly (menos escrituras al DSP)",
+  "7b7e59b9bb0294c0e882d2fa5009eb86c23fefc165a0455ef41f7bf90339a32b": "4486 + SC47.5: voice mode on pad 32 (portamento, unison) + the clock with FM poly (fewer DSP writes)",
   "65059646ab7dc73cf7b896a8077648b626dec31b21f5dbfca275d7aa2fbcc14d": "4486 + Beta 3.32 (B3.32): SC47.5",
-  "a1c73bd0836e89b85d5219cd9087fb63653ebd55eb3e7028fa052fa8e431c82e": "4486 + SC47.6: uni retrig / uni portamento / uni glide + 6 voces FM compartidas",
+  "a1c73bd0836e89b85d5219cd9087fb63653ebd55eb3e7028fa052fa8e431c82e": "4486 + SC47.6: uni retrig / uni portamento / uni glide + 6 shared FM voices",
   "02cbadefe6cd7c718db29383891ddf2b7fd3e1d83baae3578d730eefe831a69a": "4486 + Beta 3.33 (B3.33): SC47.6",
-  "636989b0609301d081aea49c58af64c6182bede42f0d48da2c54d0f89ffe5471": "4486 + SC47.7: los modos de voz en el orden del usuario (glide ligado, uni legato, uni always-glide), colores por nombre",
+  "636989b0609301d081aea49c58af64c6182bede42f0d48da2c54d0f89ffe5471": "4486 + SC47.7: voice modes in the user's order (legato glide, uni legato, uni always-glide), colours by name",
   "3dbba6e520ec0a49733f0c8fdb2e48d517278e13ff2b61e529fe798786843311": "4486 + Beta 3.34 (B3.34): SC47.7",
-  "0ba8cc428e83a7b9a568c2ee589c23d4c94b0b14b11ca512a3b7e280520abfa8": "4486 + SC47.8: menos aliasing en el oscilador del sinte propio (PolyBLEP en la sierra, la supersaw y el pulso; el wavefold limitado en las notas agudas)",
+  "0ba8cc428e83a7b9a568c2ee589c23d4c94b0b14b11ca512a3b7e280520abfa8": "4486 + SC47.8: less aliasing in the custom synth oscillator (PolyBLEP on saw, supersaw and pulse; wavefold limited on high notes)",
   "ab4ca6da4be8caf42a79937826e05773d5c99be188c579d72bf65a530a6f9af7": "4486 + Beta 3.35 (B3.35): SC47.8",
-  "033b97770155fdf3d38ac6e6a141c08729a54ea1b7b699628984fd10553048b5": "4486 + SC47.9: parejas estéreo de drums; el selector de samples del sinte propio con notas y flips (la última nota tocada al poner un flip)",
+  "033b97770155fdf3d38ac6e6a141c08729a54ea1b7b699628984fd10553048b5": "4486 + SC47.9: stereo drum pairs; the custom synth sample selector with notes and flips (the last note played when a flip is set)",
   "749244a6d8069b6384681f2796630318e707d773189b38d171baded6752f72ef": "4486 + Beta 3.36 (B3.36): SC47.9",
-  "1a53e1695b4019d2540d3f12bf8667f0817dd55770b4ef4b8cdb629bd9377f37": "4486 + Beta 3.36S (B3.36S): la versión más segura de la Beta 3.36",
-  "5a59fed3cab41bd56f9e489ce4af4cd3a7753f594b705eb55ef8887fc91bef80": "4486 + SC48: SC47.9 + sonidos de partida del FM, curva de velocity, MIDI dos veces = Preset, Note de Setup = arpegiador, Note con step-drummer, efectos por defecto, nivel de las voces en poly, escucha previa en el cue",
+  "1a53e1695b4019d2540d3f12bf8667f0817dd55770b4ef4b8cdb629bd9377f37": "4486 + Beta 3.36S (B3.36S): safer version of Beta 3.36",
+  "5a59fed3cab41bd56f9e489ce4af4cd3a7753f594b705eb55ef8887fc91bef80": "4486 + SC48: SC47.9 + FM starting sounds, velocity curve, MIDI twice = Preset, Setup Note = arpeggiator, Note with step-drummer, default effects, voice level in poly, cue preview",
   "2bdba08410d47aa8258dc6c09883a03125c1aa8aee527f21c4c805b65db37f63": "4486 + Beta 3.37 (B3.37): SC48",
-  "e441b13242871add9fe2d3af2244990b0aa2afc57aa2dd27cd66aebfb5dc0bdd": "4486 + SC48.1: SC48 + el metrónomo solo en el cue con el modo cue del Mixer",
+  "e441b13242871add9fe2d3af2244990b0aa2afc57aa2dd27cd66aebfb5dc0bdd": "4486 + SC48.1: SC48 + the metronome only in the cue with the Mixer cue mode",
   "5260c452f119c8cdf521f469ddfa4b511a4eebdb8f0a40021bf7a5220db6e90c": "4486 + Beta 3.38 (B3.38): SC48.1",
-  "c2f6c512ff732584a4f981a8d9fc03a6e8c6ac5706c722074349163f7c2e4d68": "4486 + SC48.2: SC48.1 + Jankó con la fila de encima medio tono más grave (Shift + pad 8), el anterior en Shift + pad 24, la tónica en su color, Octave mantenido = una octava",
+  "c2f6c512ff732584a4f981a8d9fc03a6e8c6ac5706c722074349163f7c2e4d68": "4486 + SC48.2: SC48.1 + Jankó with the row above a semitone lower (Shift + pad 8), the previous one on Shift + pad 24, the root in its colour, held Octave = one octave",
   "93e744cae7975c22475dd11809f1e349ea42f49bb5f98d23ca34399c0add51d3": "4486 + Beta 3.39 (B3.39): SC48.2",
-  "06a98f4bfb4afd44f0b59f72e11d8788a52824635ca395ae3700a9fe9ad625ef": "4486 + SC48.3: SC48.2 + el arreglo de RC2.11 (el editor de CC ya no deja knobs muertos al descartar; al guardar sale a la vista Preset) + 128 patches del sinte propio + knobs no secuenciables (Shift + pad 4) + modificadores del arpegio + Nudge nuevo + latch sin colores + Clear + botón de pista suelta sus latch + dobles pulsaciones = atajos con Shift + mantener ½ s una página de knobs",
+  "06a98f4bfb4afd44f0b59f72e11d8788a52824635ca395ae3700a9fe9ad625ef": "4486 + SC48.3: SC48.2 + the RC2.11 fix (the CC editor no longer leaves dead knobs when discarding; saving exits to the Preset view) + 128 custom synth patches + non-sequencable knobs (Shift + pad 4) + arpeggio modifiers + new Nudge + latch without colours + Clear + track button releases its latch + double presses = Shift shortcuts + holding a knob page for ½ s",
   "90d0c45aa5ca09c7e35b48f1a8c04e234146dbfdf684514c607ef73296a523d9": "4486 + Beta 3.40 (B3.40): SC48.3",
-  "af116ac8c01e794685df5c08dcaf965387c1ca9df6fc912bd490d862f2a7c081": "4486 + SC48.4: SC48.3 + notas fijadas en cian con Shift + Shift + paso = las notas fijadas en ese paso + pantalla de acordes al momento y su latch (Shift + fundamental) + octavas del arpegio en arena",
+  "af116ac8c01e794685df5c08dcaf965387c1ca9df6fc912bd490d862f2a7c081": "4486 + SC48.4: SC48.3 + notes pinned in cyan with Shift + Shift + step = the notes pinned at that step + instant chord screen and its latch (Shift + root) + arpeggio octaves in sand",
   "9ae7e7b5f07a85149bf4da502f5ba48c56cba026214455955d1e1c399a2d4135": "4486 + Beta 3.41 (B3.41): SC48.4",
-  "0b5e400ca14b8862f8e3fb9c9ed0258e8a5da1f004a9d6433c234e7103970142": "4486 + Beta 3.41S (B3.41S): la versión más segura de la Beta 3.41 (nada del mod escribe en la SD ni en la memoria interna)",
-  "94f82c71336d5d5068ea2fba296351cb4334a7b5276713375a7da024856abc13": "4486 + S484D (diagnóstico): SC48.4 + medidores del tiempo del DSP (Save) y del pico del sinte propio (Duplicate)",
-  "a61642b129a346c8eb275b49d0ba87e73a747e276278ce5dcad1716bb06076be": "4486 + SC48.5: SC48.4 + MIDI otra vez = Preset, limitador de voces, acordes poly más fuertes, poly por defecto",
+  "0b5e400ca14b8862f8e3fb9c9ed0258e8a5da1f004a9d6433c234e7103970142": "4486 + Beta 3.41S (B3.41S): safer version of Beta 3.41 (nothing in the mod writes to the SD or the internal memory)",
+  "94f82c71336d5d5068ea2fba296351cb4334a7b5276713375a7da024856abc13": "4486 + S484D (diagnostic): SC48.4 + DSP time meters (Save) and custom synth peak meter (Duplicate)",
+  "a61642b129a346c8eb275b49d0ba87e73a747e276278ce5dcad1716bb06076be": "4486 + SC48.5: SC48.4 + MIDI again = Preset, voice limiter, stronger poly chords, poly by default",
   "d44a5fe4e38bd01361d515231c588bfc13e250aa69a3322ec831531dd7790105": "4486 + Beta 3.42 (B3.42): SC48.5",
-  "9038c6e91d23feec93065e4bb54f1719d3bc500d03d7ef8df7eeee5da69e8e61": "4486 + S485D (diagnóstico): SC48.5 + medidores del tiempo del DSP (Save) y del pico del sinte propio (Duplicate)",
-  "b32e9f881678e5f9941f80a9adf7ccdbaf244cf69026e48a0b3d8d47db38e8f6": "4486 + SC48.7: SC48.6 + sin editor de CC con el sinte propio encendido, pad 31 solo con el VA-drum",
-  "5c6f97a48a3c5bcd260093c3b500449874abb9536590acb74dc7da43b80cb0d9": "4486 + SC48.8: SC48.7 + Shift = botones de pista blancos mientras suenan, vista Velocity con Shift: amarillo = pasos con automatización, Shift + paso amarillo = sus valores",
-  "8c866052ce5af719e7f2c7f36860ccb38f72c2b97f363d977ce12842319e8320": "4486 + SC48.9: SC48.8 + la foto (Record + paso) también en Synth 1 / 2 y los drums",
+  "9038c6e91d23feec93065e4bb54f1719d3bc500d03d7ef8df7eeee5da69e8e61": "4486 + S485D (diagnostic): SC48.5 + DSP time meters (Save) and custom synth peak meter (Duplicate)",
+  "b32e9f881678e5f9941f80a9adf7ccdbaf244cf69026e48a0b3d8d47db38e8f6": "4486 + SC48.7: SC48.6 + no CC editor with the custom synth on, pad 31 only with the VA-drum",
+  "5c6f97a48a3c5bcd260093c3b500449874abb9536590acb74dc7da43b80cb0d9": "4486 + SC48.8: SC48.7 + Shift = white track buttons while they play, Velocity view with Shift: yellow = steps with automation, Shift + yellow step = their values",
+  "8c866052ce5af719e7f2c7f36860ccb38f72c2b97f363d977ce12842319e8320": "4486 + SC48.9: SC48.8 + the snapshot (Record + step) also on Synth 1 / 2 and the drums",
   "70d441dd030bd75a645268982702190b432860224c01c7bf5300c100315a0144": "4486 + Beta 3.45 (= SC48.9)",
-  "ab004c3fc1e11d4c4598b5e925461ed06b45b56df7149348efc802cec7332a36": "4486 + SC49: SC48.9 sin el código muerto (2 296 B de flash libres para el carril extra de los drums)",
-  "66a3dd3733617896656ac9502a0200cf28296056e5f775ff23de13c1c9a76e48": "4486 + SC49.1: SC49 + paso marcado = valores del proyecto, knobs amarillos al escuchar un paso, Clear + paso = borrar su automatización, Shift + Preset = el sonido del proyecto",
+  "ab004c3fc1e11d4c4598b5e925461ed06b45b56df7149348efc802cec7332a36": "4486 + SC49: SC48.9 without the dead code (2,296 B of flash free for the extra drum lane)",
+  "66a3dd3733617896656ac9502a0200cf28296056e5f775ff23de13c1c9a76e48": "4486 + SC49.1: SC49 + marked step = project values, yellow knobs when auditioning a step, Clear + step = delete its automation, Shift + Preset = the project's sound",
   "6df47a66aa849a6152d4e5f26b8fddb65905ae814c7951076933523294159656": "4486 + Beta 3.46 (B3.46): SC49.1",
-  "02f91b095b69173392bacbdfdce40980678ac841760c7fd018fa60febb4d5afc": "4486 + SC49.2: SC49.1 + el carril extra de los drums (bits libres de cada paso)",
+  "02f91b095b69173392bacbdfdce40980678ac841760c7fd018fa60febb4d5afc": "4486 + SC49.2: SC49.1 + the extra drum lane (spare bits of each step)",
   "3d7a40708935233470a2586abef75502a56b5e2c887c4b14d2ebb398d0ae65bf": "4486 + Beta 3.47 (B3.47): SC49.2",
-  "0c3c12b08cd22b7a6c6f61f35b0025d96b601b5b93e5624b4e85e7c5c3a05478": "4486 + SC49.3: SC49.2 sin más código muerto (920 B libres)",
-  "ce59641d54e0aa6d2ec768375770bc2e299d049af672be31dfd8d8b97fb749eb": "4486 + SC49.4: SC49.3 sin el Vinyl ni el comb de los drums (Digitise K4 arreglado)",
-  "0872a20c22f9882f76e98f7b9363d6c5e00dfb07741783a2aa4fbe749763b018": "4486 + SC49.5: SC49.4 + bloqueos de estado y rampas de los drums, vista de automatización",
+  "0c3c12b08cd22b7a6c6f61f35b0025d96b601b5b93e5624b4e85e7c5c3a05478": "4486 + SC49.3: SC49.2 without more dead code (920 B free)",
+  "ce59641d54e0aa6d2ec768375770bc2e299d049af672be31dfd8d8b97fb749eb": "4486 + SC49.4: SC49.3 without the Vinyl or the drum comb (Digitise K4 fixed)",
+  "0872a20c22f9882f76e98f7b9363d6c5e00dfb07741783a2aa4fbe749763b018": "4486 + SC49.5: SC49.4 + drum state latches and ramps, automation view",
   "2f01bbe2f29228251f92f56c296c141ed2bffb3133b9d59a65d0f77565548974": "4486 + Beta 3.48 (= SC49.5)",
-  "42922a138419890aa18c68a507a8e9e3735041d195b5213e27e0ce63a330ccbe": "4486 + SC49.6: SC49.5 + el paso de Record + paso en amarillo mientras se mantiene",
+  "42922a138419890aa18c68a507a8e9e3735041d195b5213e27e0ce63a330ccbe": "4486 + SC49.6: SC49.5 + the Record + step step in yellow while it is held",
   "c6b6d048f364f725ae5c96161a0da85d2511401c94fc78e41c654dcfd1646c4f": "4486 + Beta 3.49 (= SC49.6)",
-  "fb17bf34acb501f89298a753270b3f24e9c6448531c010aa0a3331b5fdbba9ce": "4486 + RC4.01 (R401): RC4 + los arreglos desde RC4 (paso marcado = valores del proyecto; editor de CC con el sinte propio, issue #15; pad 31 del VA-drum)",
-  "a18d5c86e9013891d32087d35d973d67ad7c52ac700ea9028298b6b7204baa96": "4486 + RC4.01S (R401S): la versión más segura de RC4.01 (nada del mod escribe en la SD ni en la memoria interna)",
-  "80288ecdb59117e56cf0955257db2fc20dd5b35d45ee048e7cdbc7d068e68f23": "4486 + SC49.7: SC49.6 + la vista de automatización de los drums completa + los arreglos de RC4.02 + sitio en la flash",
+  "fb17bf34acb501f89298a753270b3f24e9c6448531c010aa0a3331b5fdbba9ce": "4486 + RC4.01 (R401): RC4 + the fixes since RC4 (marked step = project values; CC editor with the custom synth, issue #15; VA-drum pad 31)",
+  "a18d5c86e9013891d32087d35d973d67ad7c52ac700ea9028298b6b7204baa96": "4486 + RC4.01S (R401S): safer version of RC4.01 (nothing in the mod writes to the SD or the internal memory)",
+  "80288ecdb59117e56cf0955257db2fc20dd5b35d45ee048e7cdbc7d068e68f23": "4486 + SC49.7: SC49.6 + the full drum automation view + the RC4.02 fixes + room in the flash",
   "2204945f36ca5fb62423bace8caacfc0b5aa6038b5f619814111a257ee9887da": "4486 + Beta 5.0 (= SC49.7)",
-  "5f646027ec9c7073d7a735c1f9f3db16d0e8729946eaa0e60a8c861388ae76f2": "4486 + SC49.8: SC49.7 + el destello de cada nota con Shift + el guardado diferido como interruptor (sin probar)",
-  "ed09e5d159ac9aff6376a3d0eceb9a6020a3a5582da8146e24994bd3fb30837e": "4486 + Beta 5.1 (B5.1) = SC49.8 (sin probar)",
-  "212f2d414f0a9c4d1638ef590f7fb15f44073f15e0240afe17acff30575e23d0": "4486 + RC4.03 (R403): RC4.02 + el guardado diferido como interruptor (Advanced Setup, pad 22) (sin probar)",
-  "114ff29dbeb39aa9c967e41347bb15224f6bba132714003f65a35e68350b8472": "4486 + RC4.03S (R403S): la versión más segura de RC4.03 (sin probar)",
-  "0687b724fe2496a34105119f1b6b021b49feca5ad8945e0d77a7337f970a3218": "4486 + SC49.9: SC49.8 + Jankó rediseñado (sin probar)",
-  "abf375c63988caa297ac9641c805710e59db342f8d4dca11cd8958d68c8b18d0": "4486 + Beta 5.2 (B5.2) = SC49.9 (sin probar)",
-  "665c734d2db49aad51124ce3c911e49dd980199914ab409eadef2619782a1823": "4486 + SC50: SC49.9 + random-mutate rediseñado (notas y drums), factor en Octave, sweep de la automatización, Nudge nuevo, secuenciador de saltos (sin probar)",
-  "147941ca8635ac8930018bd19bfe4dd4fe548fa9c4345eb819d7a5a7a0a08f76": "4486 + Beta 5.3 (B5.3) = SC50 (sin probar)",
-  "87624c3c495db898dd7b9581dfae3d5488ba71e73d4c548e260159ed1a850278": "4486 + SC50.1: SC50 + octavas nuevas del random-mutate + la resonancia en Octave",
-  "2f7428dc9875aea5bdedb83b02b6101210c21ab6d585c92cb18108ded0358485": "4486 + Beta 5.4 (B5.4): SC50.1 con la marca de la beta",
-  "759164aba99285c20d5a121a7d33e38481c445e3ded1ad8aacd5eedef8258235": "4486 + SC50.2: SC50.1 + los tres modos del LFO + knobs de tipos lentos + filtro, VCA, efecto de fábrica + saltos: escucha parado, pad 27 parpadea, excluye los motores",
-  "7289466fd0de6d7eab37fa8a2a9e7b5d80e9d8d874e91b7c4154bf8585ecff40": "4486 + Beta 5.5 (B5.5): SC50.2 con la marca de la beta",
-  "61d1acb5e96a02895f02f1d19466a032e20011b9abe6a19d72dddcb6cde4f6d9": "4486 + SC50.7: SC50.6 + pads del mutate de drums rehechos (sin probar)",
-  "abd6d34331fc9366a789e201b2cfba73d2437a86e3aac2eeeaa2e4fe36e9a7d5": "4486 + SC50.8: SC50.7 + programas del DSP comprimidos (sin probar)",
-  "584448778a822ef05dcae2f5dec02df875dec3fa6de93c37580bfec9dc5c9384": "4486 + Beta 5.10 (B5.10): SC50.7 con la marca de la beta",
-  "3bcf05738efd3519d17c1389ff845b11fea895b1085a9b79c0cefc38a9c0690a": "4486 + Beta 5.11 (B5.11): SC50.8 con la marca de la beta",
-  "5d7c233f2087458033a19175c625be78086b72ffe99e5a74fe1e923832b5a091": "4486 + SC50.9: SC50.8 + solo / solo flip en el Mixer + dinámicas del random-mutate rehechas",
-  "16a0d72d3b2130a9bd51416be7dae8cf12246a0cfa56e48592047d9539b06075": "4486 + Beta 5.12 (B5.12): SC50.9 con la marca de la beta",
-  "4750d119d0ba6018014112a42cc50d4978d827a5ba33b206dea0863f9e6cd946": "4486 + SC51: SC50.9 + accent del mutate hasta +64 + velocity global (Advanced Setup K1 / K2)",
-  "e6d798147ec3e0a9203e425946b6469c640857441e7a57f894dc80092780aa7d": "4486 + Beta 5.13 (B5.13): SC51 con la marca de la beta",
-  "616db68f0a7769eb48e75546a25d3f362b37f3df94c5eaafd939120276982aea": "4486 + SC51.1: SC51 + el loop del sample capturado sigue al cargar un proyecto / pack",
-  "c5472aaa56f02ec8b739bd6e7d0bc014855d54a4d7b0bd0199f59f2352bb70e2": "4486 + Beta 5.14 (B5.14): SC51.1 con la marca de la beta",
-  "480714281914c6d8592cf0d83cdc2fcc30aa977b53e80fc122fbcdb69e83f3aa": "4486 + SC51.2: SC51.1 con la velocity global en K1 / K2 de Setup",
-  "4f2d1bb4436ec7cd5ff176075fcad7146eb605a7a83dbc8829a2e16629581825": "4486 + Beta 5.15 (B5.15): SC51.2 con la marca de la beta",
-  "bb9bdeedaf9ebe3c19aa65706ce852cbd3b0a9d6f6ae0ffee958f3f7cc0248fc": "4486 + SC51.3: SC51.2 con el bucle capturado que sigue sonando al arrancar el proyecto nuevo",
-  "102f66ce8f5e0c2df173de2b63dadf1ce9937c7d5aa5307a1789c9d8720d6f89": "4486 + Beta 5.16 (B5.16): SC51.3 con la marca de la beta",
-  "fe6ed78e7c8e8381993890ae8a30795be563da808c0c33c5e4d1454757b6c8d7": "4486 + SC50.6: SC50.5 + rollers de drums, LEDs de Sidechain (sin probar)",
-  "adaa47b0c3f861981977af8ccf985a4e16e3af67c6f7cd14af9898ca82153ca7": "4486 + Beta 5.9 (B5.9): SC50.6 con la marca de la beta",
-  "735ca27541df642a0a3b6ebdb430b6c2d9312c7c28211e13ad52ee96673eda38": "4486 + RC4.07 (R407): RC4.06 + LEDs de Sidechain",
-  "a7918f4f5503ee1fc143861eb5b3c380b3bf924f55de8ed80b8a5139a09569d7": "4486 + RC4.07S (R407S): RC4.07 sin escrituras propias",
-  "66dfe527a5cb77fec1f063f5e02575a7d7be3fb0ef7c9f3db4d8f1684301ea9a": "4486 + SC50.5: SC50.4 + solo en el Mixer (sin probar)",
-  "bc2c1e052fdebfe3b85eac2a9e47077afc036578e46d6e707cce6aa9430e43c2": "4486 + Beta 5.8 (B5.8): SC50.5 con la marca de la beta",
-  "422551588d5d7e0f7c7da842fff9497806adb17fd2194522173724e26cc5f14e": "4486 + SC50.4: SC50.3 + acordes con arpegiador, acorde inverso, destello del clic (sin probar)",
-  "5cb71481214e3fe4d775ce8ea83a17869e1c1a2d749087e75492e1e710bf677b": "4486 + Beta 5.7 (B5.7): SC50.4 con la marca de la beta",
-  "df43b135d4a562eadde7050b1adac7eb4b000560cf94df97888ad75c70f04e8f": "4486 + RC4.06 (R406): RC4.05 + arreglos del arpegio en acordes y de tempo",
-  "dcbf6903592f2a9a36e58a69ce551424637924203ea9f8f2980352a85c59a548": "4486 + RC4.06S (R406S): la versión más segura de RC4.06",
-  "79420236a62d85667fcef063b58e92f1604f043baed510ab152d5bde819a25e4": "4486 + SC50.3: SC50.2 + octava forzada en el modo salto, pads 17 y 25 de mutate en blanco, número del factor más corto (sin probar)",
-  "88227652015090de2a50514cb3cf22906a832400a288f32d58c7d065dd7f6a15": "4486 + Beta 5.6 (B5.6): SC50.3 con la marca de la beta",
-  "fb8b3ee77d4a61bab94d5c87ca13af745fc01a30a2481ced908d15d03c69b78a": "4486 + RC4.05 (R405): RC4.04 + los tres modos del LFO + pad 23 tenue de la fila de motores",
-  "431243629211d6eaa4182d0692e478763cfa494a8d0c6c570000481ee56c8a0b": "4486 + RC4.05S (R405S): RC4.04S + los tres modos del LFO + pad 23 tenue de la fila de motores",
-  "b94f5b74438c35cf48b81fbd8cbb9324957dc7933d57dc0cd2e6fa0a7f2d11f2": "4486 + RC4.04 (R404): RC4.03 + el Nudge mueve el contenido del tramo (sin probar)",
-  "90da7a75c839a76fbdc4b38b5c784c7ce5cf1c97d83c8b1421df545461875655": "4486 + RC4.04S (R404S): RC4.04 sin escribir en la SD (sin probar)",
-  "b1e4283808240defcc75a6084d471f74877787eb411a8d5e4ecb7feb8009d864": "4486 + RC4.02 (R402): RC4.01 + los pads cromáticos de los drums graban golpe y tono; el guardado espera al stop; Digitise K4",
-  "6af7fbf99a12366a19d3434388122134e305e64b30b7b4ccc3f97b06b8c57092": "4486 + RC4.02S (R402S): la versión más segura de RC4.02 (nada del mod escribe en la SD ni en la memoria interna)",
+  "5f646027ec9c7073d7a735c1f9f3db16d0e8729946eaa0e60a8c861388ae76f2": "4486 + SC49.8: SC49.7 + the flash of each note with Shift + deferred saving as a switch (untested)",
+  "ed09e5d159ac9aff6376a3d0eceb9a6020a3a5582da8146e24994bd3fb30837e": "4486 + Beta 5.1 (B5.1) = SC49.8 (untested)",
+  "212f2d414f0a9c4d1638ef590f7fb15f44073f15e0240afe17acff30575e23d0": "4486 + RC4.03 (R403): RC4.02 + deferred saving as a switch (Advanced Setup, pad 22) (untested)",
+  "114ff29dbeb39aa9c967e41347bb15224f6bba132714003f65a35e68350b8472": "4486 + RC4.03S (R403S): safer version of RC4.03 (untested)",
+  "0687b724fe2496a34105119f1b6b021b49feca5ad8945e0d77a7337f970a3218": "4486 + SC49.9: SC49.8 + redesigned Jankó (untested)",
+  "abf375c63988caa297ac9641c805710e59db342f8d4dca11cd8958d68c8b18d0": "4486 + Beta 5.2 (B5.2) = SC49.9 (untested)",
+  "665c734d2db49aad51124ce3c911e49dd980199914ab409eadef2619782a1823": "4486 + SC50: SC49.9 + redesigned random-mutate (notes and drums), factor on Octave, automation sweep, new Nudge, jump sequencer (untested)",
+  "147941ca8635ac8930018bd19bfe4dd4fe548fa9c4345eb819d7a5a7a0a08f76": "4486 + Beta 5.3 (B5.3) = SC50 (untested)",
+  "87624c3c495db898dd7b9581dfae3d5488ba71e73d4c548e260159ed1a850278": "4486 + SC50.1: SC50 + new random-mutate octaves + resonance on Octave",
+  "2f7428dc9875aea5bdedb83b02b6101210c21ab6d585c92cb18108ded0358485": "4486 + Beta 5.4 (B5.4): SC50.1 with the beta marker",
+  "759164aba99285c20d5a121a7d33e38481c445e3ded1ad8aacd5eedef8258235": "4486 + SC50.2: SC50.1 + the three LFO modes + slow type knobs + factory filter, VCA, effect + jumps: audition stopped, pad 27 blinks, excludes the engines",
+  "7289466fd0de6d7eab37fa8a2a9e7b5d80e9d8d874e91b7c4154bf8585ecff40": "4486 + Beta 5.5 (B5.5): SC50.2 with the beta marker",
+  "61d1acb5e96a02895f02f1d19466a032e20011b9abe6a19d72dddcb6cde4f6d9": "4486 + SC50.7: SC50.6 + drum mutate pads redone (untested)",
+  "abd6d34331fc9366a789e201b2cfba73d2437a86e3aac2eeeaa2e4fe36e9a7d5": "4486 + SC50.8: SC50.7 + compressed DSP programs (untested)",
+  "584448778a822ef05dcae2f5dec02df875dec3fa6de93c37580bfec9dc5c9384": "4486 + Beta 5.10 (B5.10): SC50.7 with the beta marker",
+  "3bcf05738efd3519d17c1389ff845b11fea895b1085a9b79c0cefc38a9c0690a": "4486 + Beta 5.11 (B5.11): SC50.8 with the beta marker",
+  "5d7c233f2087458033a19175c625be78086b72ffe99e5a74fe1e923832b5a091": "4486 + SC50.9: SC50.8 + solo / solo flip in the Mixer + random-mutate dynamics redone",
+  "16a0d72d3b2130a9bd51416be7dae8cf12246a0cfa56e48592047d9539b06075": "4486 + Beta 5.12 (B5.12): SC50.9 with the beta marker",
+  "4750d119d0ba6018014112a42cc50d4978d827a5ba33b206dea0863f9e6cd946": "4486 + SC51: SC50.9 + mutate accent up to +64 + global velocity (Advanced Setup K1 / K2)",
+  "e6d798147ec3e0a9203e425946b6469c640857441e7a57f894dc80092780aa7d": "4486 + Beta 5.13 (B5.13): SC51 with the beta marker",
+  "616db68f0a7769eb48e75546a25d3f362b37f3df94c5eaafd939120276982aea": "4486 + SC51.1: SC51 + the captured sample's loop follows when loading a project / pack",
+  "c5472aaa56f02ec8b739bd6e7d0bc014855d54a4d7b0bd0199f59f2352bb70e2": "4486 + Beta 5.14 (B5.14): SC51.1 with the beta marker",
+  "480714281914c6d8592cf0d83cdc2fcc30aa977b53e80fc122fbcdb69e83f3aa": "4486 + SC51.2: SC51.1 with the global velocity on Setup K1 / K2",
+  "4f2d1bb4436ec7cd5ff176075fcad7146eb605a7a83dbc8829a2e16629581825": "4486 + Beta 5.15 (B5.15): SC51.2 with the beta marker",
+  "bb9bdeedaf9ebe3c19aa65706ce852cbd3b0a9d6f6ae0ffee958f3f7cc0248fc": "4486 + SC51.3: SC51.2 with the captured loop still playing when starting the new project",
+  "102f66ce8f5e0c2df173de2b63dadf1ce9937c7d5aa5307a1789c9d8720d6f89": "4486 + Beta 5.16 (B5.16): SC51.3 with the beta marker",
+  "fe6ed78e7c8e8381993890ae8a30795be563da808c0c33c5e4d1454757b6c8d7": "4486 + SC50.6: SC50.5 + drum rollers, Sidechain LEDs (untested)",
+  "adaa47b0c3f861981977af8ccf985a4e16e3af67c6f7cd14af9898ca82153ca7": "4486 + Beta 5.9 (B5.9): SC50.6 with the beta marker",
+  "735ca27541df642a0a3b6ebdb430b6c2d9312c7c28211e13ad52ee96673eda38": "4486 + RC4.07 (R407): RC4.06 + Sidechain LEDs",
+  "a7918f4f5503ee1fc143861eb5b3c380b3bf924f55de8ed80b8a5139a09569d7": "4486 + RC4.07S (R407S): RC4.07 with no writes of its own",
+  "66dfe527a5cb77fec1f063f5e02575a7d7be3fb0ef7c9f3db4d8f1684301ea9a": "4486 + SC50.5: SC50.4 + solo in the Mixer (untested)",
+  "bc2c1e052fdebfe3b85eac2a9e47077afc036578e46d6e707cce6aa9430e43c2": "4486 + Beta 5.8 (B5.8): SC50.5 with the beta marker",
+  "422551588d5d7e0f7c7da842fff9497806adb17fd2194522173724e26cc5f14e": "4486 + SC50.4: SC50.3 + chords with arpeggiator, inverted chord, click flash (untested)",
+  "5cb71481214e3fe4d775ce8ea83a17869e1c1a2d749087e75492e1e710bf677b": "4486 + Beta 5.7 (B5.7): SC50.4 with the beta marker",
+  "df43b135d4a562eadde7050b1adac7eb4b000560cf94df97888ad75c70f04e8f": "4486 + RC4.06 (R406): RC4.05 + arpeggio-on-chords and tempo fixes",
+  "dcbf6903592f2a9a36e58a69ce551424637924203ea9f8f2980352a85c59a548": "4486 + RC4.06S (R406S): safer version of RC4.06",
+  "79420236a62d85667fcef063b58e92f1604f043baed510ab152d5bde819a25e4": "4486 + SC50.3: SC50.2 + forced octave in jump mode, mutate pads 17 and 25 in white, shorter factor number (untested)",
+  "88227652015090de2a50514cb3cf22906a832400a288f32d58c7d065dd7f6a15": "4486 + Beta 5.6 (B5.6): SC50.3 with the beta marker",
+  "fb8b3ee77d4a61bab94d5c87ca13af745fc01a30a2481ced908d15d03c69b78a": "4486 + RC4.05 (R405): RC4.04 + the three LFO modes + dim pad 23 of the engine row",
+  "431243629211d6eaa4182d0692e478763cfa494a8d0c6c570000481ee56c8a0b": "4486 + RC4.05S (R405S): RC4.04S + the three LFO modes + dim pad 23 of the engine row",
+  "b94f5b74438c35cf48b81fbd8cbb9324957dc7933d57dc0cd2e6fa0a7f2d11f2": "4486 + RC4.04 (R404): RC4.03 + Nudge moves the section's content (untested)",
+  "90da7a75c839a76fbdc4b38b5c784c7ce5cf1c97d83c8b1421df545461875655": "4486 + RC4.04S (R404S): RC4.04 without writing to the SD (untested)",
+  "b1e4283808240defcc75a6084d471f74877787eb411a8d5e4ecb7feb8009d864": "4486 + RC4.02 (R402): RC4.01 + the chromatic drum pads record hit and pitch; saving waits for stop; Digitise K4",
+  "6af7fbf99a12366a19d3434388122134e305e64b30b7b4ccc3f97b06b8c57092": "4486 + RC4.02S (R402S): safer version of RC4.02 (nothing in the mod writes to the SD or the internal memory)",
   "931ecbbf97914dd0a34dfcbc8adcb37db6c22a77604c4b071ba8a5a9f358d84f": "4486 + Beta 3.44 (B3.44): SC48.8",
-  "0e7f6d3791878b822e94953d0d2cafe17111dd340b21bed9e0635be657d943e3": "4486 + SC48.6: SC48.5 + Synth 1 / 2 ya no callan con un acorde poly del sinte propio",
+  "0e7f6d3791878b822e94953d0d2cafe17111dd340b21bed9e0635be657d943e3": "4486 + SC48.6: SC48.5 + Synth 1 / 2 no longer go silent with a poly chord from the custom synth",
   "aa308c9d20906023783dd29d55c194f4746cb13b13e1d7d4f98eaf06c169e3c9": "4486 + Beta 3.43 (B3.43): SC48.6",
-  "23a9c2a366994aa3ddb44e96ed26d77e94bf6adbf3c8c8b54910196bac516eb2": "4486 + RC4: la versión candidata 4 (= SC48.6: RC2.11 + todo lo de las betas hasta la 3.43)",
-  "311862c48aea09da40ab05bfe383218a92f66459742ee7e8a015e8438207f94b": "4486 + RC4S: la versión más segura de RC4 (nada del mod escribe en la SD ni en la memoria interna)",
-  "518f8c0f63457b660b000ae84e67a3787ca0c53f0c908d135f8265d1d2dbf3e6": "4486 + Beta 3.43S (B3.43S): la versión más segura de la Beta 3.43 (nada del mod escribe en la SD ni en la memoria interna)",
-  "38c594c6a754d76516f78d6e86200800afbbac8915395aaa086671b9b974d7cc": "4486 + S486D (diagnóstico): SC48.6 + medidores del tiempo del DSP (Save) y del pico del sinte propio (Duplicate)",
-  "a31e4c814e418fbef60a8b1b44fecaef8115c6bcc438d40ab86aabd5008a1a24": "4486 + S494D (diagnóstico): SC49.4 + la ITCM, el núcleo del DSP y la subida de samples leídos desde el PC por USB",
-  "71e1c2607b0759e329f4913b597bb330f98437ae4556b9a91b8a56eed9d8053e": "4486 + S494D2 (diagnóstico): S494D + una rutina de 3 instrucciones ejecutada desde la ITCM",
-  "0755891492888dbd029870fd94179cf62c7a60e618677583462c05eee916b408": "4486 + S513D (diagnóstico): Beta 5.16 + voces FM de prueba en el núcleo 1 del DSP",
-  "fe7163d07de87f954e438bb2f4833c3f62b00e8b5573e02a41f42dcae8f82955": "4486 + SC51.4: las voces FM del sinte propio en el núcleo 1 del DSP, 6 por pista",
+  "23a9c2a366994aa3ddb44e96ed26d77e94bf6adbf3c8c8b54910196bac516eb2": "4486 + RC4: release candidate 4 (= SC48.6: RC2.11 + everything from the betas up to 3.43)",
+  "311862c48aea09da40ab05bfe383218a92f66459742ee7e8a015e8438207f94b": "4486 + RC4S: safer version of RC4 (nothing in the mod writes to the SD or the internal memory)",
+  "518f8c0f63457b660b000ae84e67a3787ca0c53f0c908d135f8265d1d2dbf3e6": "4486 + Beta 3.43S (B3.43S): safer version of Beta 3.43 (nothing in the mod writes to the SD or the internal memory)",
+  "38c594c6a754d76516f78d6e86200800afbbac8915395aaa086671b9b974d7cc": "4486 + S486D (diagnostic): SC48.6 + DSP time meters (Save) and custom synth peak meter (Duplicate)",
+  "a31e4c814e418fbef60a8b1b44fecaef8115c6bcc438d40ab86aabd5008a1a24": "4486 + S494D (diagnostic): SC49.4 + the ITCM, the DSP core and uploading samples read from the PC over USB",
+  "71e1c2607b0759e329f4913b597bb330f98437ae4556b9a91b8a56eed9d8053e": "4486 + S494D2 (diagnostic): S494D + a 3-instruction routine run from the ITCM",
+  "0755891492888dbd029870fd94179cf62c7a60e618677583462c05eee916b408": "4486 + S513D (diagnostic): Beta 5.16 + test FM voices on DSP core 1",
+  "fe7163d07de87f954e438bb2f4833c3f62b00e8b5573e02a41f42dcae8f82955": "4486 + SC51.4: the custom synth FM voices on DSP core 1, 6 per track",
   "2f755a22d0b7db1f3123ddf8de2ef3c54544ccf524f824b5fc246b2d189ab688": "4486 + Beta 5.17 (= SC51.4)",
-  "552cd17922068accb19dff0a85fec1fada5b67c2ff056680ae46f717b2164f0b": "4486 + S514D (diagnóstico): SC51.4 + el mapa de memoria (núcleo 1, núcleo 0, RAM del ARM)",
-  "68a5aa62b86155374640ebe21f4fa607a55be8071686572b7b53cd0a1111877a": "4486 + S514D2 (diagnóstico): S514D con el núcleo 1 en MS = 1",
-  "6e21ef9a86bb4530f129b2fb515ee6089932051a54bce638d5edb090fa1fb2aa": "4486 + SC51.5: SC51.4 con el núcleo 1 del DSP en MS = 1 (8 K de programa)",
+  "552cd17922068accb19dff0a85fec1fada5b67c2ff056680ae46f717b2164f0b": "4486 + S514D (diagnostic): SC51.4 + the memory map (core 1, core 0, ARM RAM)",
+  "68a5aa62b86155374640ebe21f4fa607a55be8071686572b7b53cd0a1111877a": "4486 + S514D2 (diagnostic): S514D with core 1 at MS = 1",
+  "6e21ef9a86bb4530f129b2fb515ee6089932051a54bce638d5edb090fa1fb2aa": "4486 + SC51.5: SC51.4 with DSP core 1 at MS = 1 (8 K of program)",
   "5778a291487c683cd82b677a41dc9a15c530e0bfdbb28534a8c810005064bbc2": "4486 + Beta 5.18 (= SC51.5)",
-  "9a2bc0c855440531c726490e4f7b8c4c5a0873e3f38cdc704d4cdddc1b2e79b4": "4486 + SC51.6: el step flip se elige desde el patch flip",
+  "9a2bc0c855440531c726490e4f7b8c4c5a0873e3f38cdc704d4cdddc1b2e79b4": "4486 + SC51.6: the step flip is chosen from the patch flip",
   "781605a7b6d6ba84df56ebe515e4c79dd46072cf48aa1759bde436cbf45f0749": "4486 + Beta 5.19 (= SC51.6)",
-  "5fd9f2de6953fa67254c2202fbd0c8d796c267ea88b285ba4a8afe0f8860f85c": "4486 + S516D (diagnóstico): SC51.6 + copia de las ondas Nova al PC",
-  "5f795c5a168fde22593bea27d268cdfaa37a6339573619b5108aa3e8f3b73940": "4486 + S516D2 (diagnóstico): S516D con las órdenes en X:$5FF0",
-  "3d11cef4d081fec827597622bb72c3fd63857fe219975079ea751b46a8b694bd": "4486 + S516D3 (diagnóstico): S516D2 + borrar (del)",
-  "b29909bf72eb5dd9243b178507e0eaeaf5d30adc3a650206a4eb344946d8e36b": "4486 + SC51.7: SC51.6 + FM de 8 operadores",
+  "5fd9f2de6953fa67254c2202fbd0c8d796c267ea88b285ba4a8afe0f8860f85c": "4486 + S516D (diagnostic): SC51.6 + copy of the Nova waves to the PC",
+  "5f795c5a168fde22593bea27d268cdfaa37a6339573619b5108aa3e8f3b73940": "4486 + S516D2 (diagnostic): S516D with the commands at X:$5FF0",
+  "3d11cef4d081fec827597622bb72c3fd63857fe219975079ea751b46a8b694bd": "4486 + S516D3 (diagnostic): S516D2 + delete (del)",
+  "b29909bf72eb5dd9243b178507e0eaeaf5d30adc3a650206a4eb344946d8e36b": "4486 + SC51.7: SC51.6 + 8-operator FM",
   "879e1dcf9b8d7e7ffc16a84658c9639c506b9b099db6b0ccf22cb2fe7a6d3dd4": "4486 + Beta 5.20 (= SC51.7)",
   "1cd028153541795d73ec0213c74a73dd8c3d5fd26a531a980b9df62648b54f9a": "4486 + SC51.8",
   "0329fde6cd823ecf7db681f2750df5822c9fa5dccbc9e2ce43609083fef0e43f": "4486 + Beta 5.21 (= SC51.8)",
@@ -493,6 +493,7 @@ const KNOWN = {
   "f8a3eb71f1dc7d337869a7d1363871bf5a2c31bf22ba948b6d51488c01abe84c": "4486 + Beta 5.52 (= SC56.7)",
   "bec055061b2ba6611b80834beb19e92333e2a59f4bec033ca1d24a9e4f5d2745": "4486 + SC57.1 (Master FX hold, morph attack)",
   "988db9eb0841d358d61a494d71f044c61900d36a0e55e45c9b82eae8e127a23e": "4486 + Beta 5.56 (= SC57.1)",
+  "d56b1d91cd07b2671e2c59012f5b9a180b4c5a6774528b016603c4a76cb6870d": "4486 + SC57.3 (LED mirror over USB MIDI, CT2 = 7-bit SEQ, new version block)",
   "2d33f18004c6d6c1538cdf3f44ae581b63026941fd235aed82455cc178d92c4c": "4486 + SC57 (one morph at a time)",
   "557a0c79ec9304035c28f00f7861874bc5fde4b52bdd265a4b57a033cad46bde": "4486 + Beta 5.55 (= SC57)",
   "34a5c26ca279f1581df60521ccd287ca50fcecc304f264ca4c37b8a78112c11e": "4486 + SC56.9 (morph entry hang fix)",
@@ -507,106 +508,106 @@ const KNOWN = {
   "2a712322663cf95041ec6ecee22c81d01f795c7fb20d2fb060cbba74d12b5410": "4486 + RC4.09S",
   "1a0ecfd4262bea91f758631593d722d63bd5e9552d66d75bf1f5a21e91e192f7": "4486 + RC4.08",
   "cd7b799968e5bbd87f17ba9ee103d4db2847dbbc7573f0bcbd941f5f4b4d9d09": "4486 + RC4.08S",
-  "0b514ad7fa332a15a9ab342790850b7711b5c27af5d0ce87c6992ccfd4fc1dff": "4486 + RC2.11 (R211): RC2.10 + el editor de CC ya no deja knobs muertos al descartar un cambio; al guardar sale a la vista Preset",
-  "d5f751b80857c3ca959f2aac40fd838f2d494772d189de42dada8fa026f7d1c5": "4486 + RC2.11S (R211S): la versión más segura de RC2.11",
-  "fb19cba966dc755019c7f31c167dfc5df9d2b620b5291f564de98db3c8719ef1": "4486 + R211SD (diagnóstico): RC2.11S + la herramienta remota por USB (ctremote.py) para leer y reparar el pack de la memoria interna",
-  "6d81f07c5282c3f994f1ac7f1c93704c5a3012d3acc2f8d61ca9496f9b586254": "4486 + Beta 3.37S (B3.37S): la versión más segura de la Beta 3.37",
-  "a620adaf1b3c8186119e3eca8042b995b5453d232fc57a1e9d07c2f89584cd16": "4486 + RC2.10 (R210): RC2.09 + el arpegiador parado al tempo del proyecto",
-  "fef59c5b63a4786e00fbb3bbabf87340e1513f5784a38326f90ac720aab2fb3f": "4486 + RC2.10S (R210S): la versión más segura de RC2.10",
-  "fad712fc90aeac6537717edca3023239d969e539f11e525a8c5dd09764e4e0c9": "4486 + S47D: diagnóstico (lectura remota del DSP; = SC47)",
-  "61279389118af5caf6cc3f4d96f59b9ad0c5513f99dee58114c8f5f10c7da490": "4486 + S469D: diagnóstico (sonda de los lados del estéreo; = SC46.9)",
-  "ee3f140ab8d447371409f4cd6cdc2c2485c4a81f8c764e97bf041681ccd69fcc": "4486 + S469D2: diagnóstico (sonda de los lados + el anillo; = SC46.9)",
-  "389df973300e0078c087896801791795483ea8d3b973d095e6717ea34708853e": "4486 + RC2.09 (R209): RC2.08 + el inicio del sample de los drums arreglado",
-  "f79de43f827be824f455826818c7ec6ad6bde9e4189d9747b0c372c1732c2d51": "4486 + RC2.09S (R209S): RC2.09 sin escrituras propias en la SD",
-  "18bd511f00d10fa52fc2a2e1363f15372ca5129fb9865599d1a795d278a4894d": "4486 + RC2.08 (R208): RC2.07 + el teclado externo toca el sinte propio",
-  "5cae0ccb2d56f0a55ad2e892e46a7fbe64edba55ca9319fd6c0dc471f19cefaa": "4486 + RC2.08S (R208S): RC2.08 sin escrituras propias en la SD",
-  "44cb3da51ebe2fe8d756075d9511877115106f8da7e3bc3e3372e9500ba07794": "4486 + RC2.07 (R207): RC2.06 + arreglo de la longitud fija",
-  "2371c41f227623cd4adf1a8bd802e3cf1564dddc4ebf03bbc736f586b3c8d54e": "4486 + RC2.07S (R207S): RC2.07 + solo lectura en todos los packs",
-  "cbf3486a8e8da0720ffde2955fa22a41df098f31f6f44b3bd5582551be0ce889": "4486 + SC45.9: SC45.8 + los destinos de la página 4 en los pads",
+  "0b514ad7fa332a15a9ab342790850b7711b5c27af5d0ce87c6992ccfd4fc1dff": "4486 + RC2.11 (R211): RC2.10 + the CC editor no longer leaves dead knobs when discarding a change; saving exits to the Preset view",
+  "d5f751b80857c3ca959f2aac40fd838f2d494772d189de42dada8fa026f7d1c5": "4486 + RC2.11S (R211S): safer version of RC2.11",
+  "fb19cba966dc755019c7f31c167dfc5df9d2b620b5291f564de98db3c8719ef1": "4486 + R211SD (diagnostic): RC2.11S + the USB remote tool (ctremote.py) to read and repair the internal memory pack",
+  "6d81f07c5282c3f994f1ac7f1c93704c5a3012d3acc2f8d61ca9496f9b586254": "4486 + Beta 3.37S (B3.37S): safer version of Beta 3.37",
+  "a620adaf1b3c8186119e3eca8042b995b5453d232fc57a1e9d07c2f89584cd16": "4486 + RC2.10 (R210): RC2.09 + the arpeggiator stopped to the project tempo",
+  "fef59c5b63a4786e00fbb3bbabf87340e1513f5784a38326f90ac720aab2fb3f": "4486 + RC2.10S (R210S): safer version of RC2.10",
+  "fad712fc90aeac6537717edca3023239d969e539f11e525a8c5dd09764e4e0c9": "4486 + S47D: diagnostic (remote DSP read; = SC47)",
+  "61279389118af5caf6cc3f4d96f59b9ad0c5513f99dee58114c8f5f10c7da490": "4486 + S469D: diagnostic (stereo sides probe; = SC46.9)",
+  "ee3f140ab8d447371409f4cd6cdc2c2485c4a81f8c764e97bf041681ccd69fcc": "4486 + S469D2: diagnostic (sides + ring probe; = SC46.9)",
+  "389df973300e0078c087896801791795483ea8d3b973d095e6717ea34708853e": "4486 + RC2.09 (R209): RC2.08 + drum sample start fixed",
+  "f79de43f827be824f455826818c7ec6ad6bde9e4189d9747b0c372c1732c2d51": "4486 + RC2.09S (R209S): RC2.09 with no writes of its own to the SD",
+  "18bd511f00d10fa52fc2a2e1363f15372ca5129fb9865599d1a795d278a4894d": "4486 + RC2.08 (R208): RC2.07 + the external keyboard plays the custom synth",
+  "5cae0ccb2d56f0a55ad2e892e46a7fbe64edba55ca9319fd6c0dc471f19cefaa": "4486 + RC2.08S (R208S): RC2.08 with no writes of its own to the SD",
+  "44cb3da51ebe2fe8d756075d9511877115106f8da7e3bc3e3372e9500ba07794": "4486 + RC2.07 (R207): RC2.06 + fixed-length fix",
+  "2371c41f227623cd4adf1a8bd802e3cf1564dddc4ebf03bbc736f586b3c8d54e": "4486 + RC2.07S (R207S): RC2.07 + read-only on all packs",
+  "cbf3486a8e8da0720ffde2955fa22a41df098f31f6f44b3bd5582551be0ce889": "4486 + SC45.9: SC45.8 + page 4 destinations on the pads",
   "a56a21032452956fed31797172cd2286de1d00fe43a0bd54fbed3ddb3cc4b6f2": "4486 + Beta 3.16 (B3.16): SC45.9",
-  "f078529e31f4dfeac089c73a0ad23111713fb28acab3bd3b2a82c80d0f38f899": "4486 + SC45.8: SC45.7 + arreglo de la nota colgada + knobs de otra pista en el teclado partido",
+  "f078529e31f4dfeac089c73a0ad23111713fb28acab3bd3b2a82c80d0f38f899": "4486 + SC45.8: SC45.7 + stuck-note fix + knobs of another track on the split keyboard",
   "b6ddb8f5a9cc9b20685b82251484d71f35189d367e75f5849d7b6540c7b2627a": "4486 + Beta 3.15 (B3.15): SC45.8",
-  "d37ec28232a1a2b3edb950a9546863cec6fa4a5587db3847a35336d5dcecf0e4": "4486 + RC2.06 (R206): RC2.05 + arreglo de la nota colgada (dos pads de la misma nota)",
-  "465f44da016447d06162c30ba402e1667d2834bb5b019d2bbaf2cae3f8a8d766": "4486 + RC2.06S (R206S): RC2.06 + solo lectura en todos los packs",
-  "73bd91183b85aa3127277a6f01f671edbffd2dde225b5e1537152512d5126769": "4486 + SC45.7: SC45.6 + arreglo del cuelgue con la escala propia",
+  "d37ec28232a1a2b3edb950a9546863cec6fa4a5587db3847a35336d5dcecf0e4": "4486 + RC2.06 (R206): RC2.05 + stuck-note fix (two pads of the same note)",
+  "465f44da016447d06162c30ba402e1667d2834bb5b019d2bbaf2cae3f8a8d766": "4486 + RC2.06S (R206S): RC2.06 + read-only on all packs",
+  "73bd91183b85aa3127277a6f01f671edbffd2dde225b5e1537152512d5126769": "4486 + SC45.7: SC45.6 + custom-scale hang fix",
   "ed3e527f3830429825f57abead306dac35bf92e8dc778fa9e8d0d411a8f2a351": "4486 + Beta 3.14 (B3.14): SC45.7",
-  "4fd74b577fdbf6001fabbbc2da00b93ec3e35b2949af18dfc661b6409821f458": "4486 + RC2.05 (R205): RC2.04 + arreglo del cuelgue con la escala propia",
-  "dff2a9f4e4f7ee1b491527f070632a8ec62e2af7f28563aa018e234b7ad39cc3": "4486 + RC2.05S (R205S): RC2.05 + solo lectura en todos los packs",
-  "de0ae4a2eb98b2eb68068670918fc3bf0ec0f71728a83ed8079e2550c9c225f7": "4486 + SC45.6: FM de 4 operadores en el sinte propio de MIDI 1 / 2",
+  "4fd74b577fdbf6001fabbbc2da00b93ec3e35b2949af18dfc661b6409821f458": "4486 + RC2.05 (R205): RC2.04 + custom-scale hang fix",
+  "dff2a9f4e4f7ee1b491527f070632a8ec62e2af7f28563aa018e234b7ad39cc3": "4486 + RC2.05S (R205S): RC2.05 + read-only on all packs",
+  "de0ae4a2eb98b2eb68068670918fc3bf0ec0f71728a83ed8079e2550c9c225f7": "4486 + SC45.6: 4-operator FM in the custom synth on MIDI 1 / 2",
   "73890089d6b74de061c0756d50b1e6ce00dcc88057f2b2d44311cb17a26e02f5": "4486 + Beta 3.13 (B3.13) = SC45.6",
-  "3d410abaee239c5dc46b23d32a26f8a98174a4142c66e46a1ad5dc9f3d2c928c": "4486 + RC2.04 (R204): RC2.03 + notas largas al grabar + sample mantenido + paso",
-  "86e4459ea8a0603fb4d4bb147d493a5ceffdbb9df2c0af90bbe384ae1e53ff67": "4486 + RC2.04S (R204S): RC2.04 + solo lectura en todos los packs",
-  "d5f3fd6036801d15d7e966641cc999adbcc7a3e68c3884a5e92f73f772beceda": "4486 + RC2.03 (R203) = RC2.02 + arreglo de la cuenta atrás",
-  "738783ed5b8bf080b92ac5ce70a4997059eb94c336a140f8dfe7ba8a658da519": "4486 + RC2.03S (R203S) = RC2.03 sin escrituras propias en la SD",
+  "3d410abaee239c5dc46b23d32a26f8a98174a4142c66e46a1ad5dc9f3d2c928c": "4486 + RC2.04 (R204): RC2.03 + long notes when recording + held sample + step",
+  "86e4459ea8a0603fb4d4bb147d493a5ceffdbb9df2c0af90bbe384ae1e53ff67": "4486 + RC2.04S (R204S): RC2.04 + read-only on all packs",
+  "d5f3fd6036801d15d7e966641cc999adbcc7a3e68c3884a5e92f73f772beceda": "4486 + RC2.03 (R203) = RC2.02 + countdown fix",
+  "738783ed5b8bf080b92ac5ce70a4997059eb94c336a140f8dfe7ba8a658da519": "4486 + RC2.03S (R203S) = RC2.03 with no writes of its own to the SD",
   "b845b267d0e06fdcfa3b20c417d5307416bf53cfefcb3313fa1d450c18e71912": "4486 + RC2.02 (R202) = SC44.3",
-  "234d862b3a246256688b36ff7e15dbf36b21d4d7e9842c4de73a3e162509cf5f": "4486 + RC2.02S (R202S) = RC2.02 sin escrituras propias en la tarjeta",
-  "8e7cefe75e1f38c01a1ac31db25415bb72446a3bcd90515ef0cf2cb276bf1e79": "4486 + SC41.6: SC41.5 + patch flip solo por el canal de su pista",
+  "234d862b3a246256688b36ff7e15dbf36b21d4d7e9842c4de73a3e162509cf5f": "4486 + RC2.02S (R202S) = RC2.02 with no writes of its own to the card",
+  "8e7cefe75e1f38c01a1ac31db25415bb72446a3bcd90515ef0cf2cb276bf1e79": "4486 + SC41.6: SC41.5 + patch flip only on its track's channel",
   "4f6a13b7987172cad8220236608bd330ee2b3ee0e7f023d553786156548da28e": "4486 + Beta 1.6 (B1.6) = SC41.6",
-  "fe1e02142c30ac3a7823c5b48f6041bf548530cca3bd85f67e7fe72f4f25c459": "4486 + SC41.5: SC41.4 + canales de Program Change + Synth 1 / 2 en Setup",
+  "fe1e02142c30ac3a7823c5b48f6041bf548530cca3bd85f67e7fe72f4f25c459": "4486 + SC41.5: SC41.4 + Program Change channels + Synth 1 / 2 in Setup",
   "68f6f9d8d9a98548f1dee87b518a8207e3b934c9db6b1f3fbc5e94fa794ab262": "4486 + Beta 1.5 (B1.5) = SC41.5",
-  "3579908ff4cdec00b9696124010a7296ef0e165bb000ee476c0b85578100600b": "4486 + RC0.9.2 (R0902): RC0.9.1 + Synth 1 / 2 en Setup",
-  "d313c18f6dedf23a61cd3f381c7fc25cfbbb42248856be8c9c1c3adc9ccf5b25": "4486 + RC0.9.2S (R0902S): RC0.9.1S + Synth 1 / 2 en Setup",
-  "1a15100f81d65fdca55d36b8373dc42b8e138be3fa3b742a5f257f5bef8a324d": "4486 + SC41.4: SC41.3 + filtro por defecto de los drums = EQ de stock",
+  "3579908ff4cdec00b9696124010a7296ef0e165bb000ee476c0b85578100600b": "4486 + RC0.9.2 (R0902): RC0.9.1 + Synth 1 / 2 in Setup",
+  "d313c18f6dedf23a61cd3f381c7fc25cfbbb42248856be8c9c1c3adc9ccf5b25": "4486 + RC0.9.2S (R0902S): RC0.9.1S + Synth 1 / 2 in Setup",
+  "1a15100f81d65fdca55d36b8373dc42b8e138be3fa3b742a5f257f5bef8a324d": "4486 + SC41.4: SC41.3 + default drum filter = stock EQ",
   "51baccb54d6758ae3e6f063da94e63d9900ba43515ef4d8eff34d036245f6627": "4486 + Beta 1.4 (B1.4) = SC41.4",
-  "7b719c89fede2b64818ea08503d7b86894c4ce4c6b6ba130f68dd19ef2e46f44": "4486 + RC0.9.1 (R0901): RC0.9 + filtro por defecto de los drums = EQ de stock",
-  "fc851f4a44cc4f456ca1ae5a52f156a600436582402a541064d4d827bbff8e0f": "4486 + RC0.9.1S (R0901S): RC0.9S + filtro por defecto de los drums = EQ de stock",
-  "8256aa62f7082fb7f866c30aac6d39504164740a630c4f75785165a2c24b2df4": "4486 + SC41.3: SC41.2 + pack de la memoria interna de solo lectura",
+  "7b719c89fede2b64818ea08503d7b86894c4ce4c6b6ba130f68dd19ef2e46f44": "4486 + RC0.9.1 (R0901): RC0.9 + default drum filter = stock EQ",
+  "fc851f4a44cc4f456ca1ae5a52f156a600436582402a541064d4d827bbff8e0f": "4486 + RC0.9.1S (R0901S): RC0.9S + default drum filter = stock EQ",
+  "8256aa62f7082fb7f866c30aac6d39504164740a630c4f75785165a2c24b2df4": "4486 + SC41.3: SC41.2 + internal memory pack read-only",
   "6f07376b5983a5e0350d4883ae9ed57a69bc735320afde9f43ca75017b8e8736": "4486 + Beta 1.3 (B1.3) = SC41.3",
-  "832de165feb4523c680d47e75db96b03da13db1faeabbca828b8886828fc3238": "4486 + RC0.9: RC0.8 + pack de la memoria interna de solo lectura",
-  "35295b77b94594574f6f04d3e75c7f29733e676bbd380db436d6c7f01a6d51dc": "4486 + RC0.9S = RC0.8S con el nombre nuevo",
-  "5b10f5bb8cc5533523e7b43ed4a72f2994224822cecb2e7a7a158da6c4fa4ab1": "4486 + SC41.2: SC41.1 + regla de cadena fuera de 1-8 = ninguna",
+  "832de165feb4523c680d47e75db96b03da13db1faeabbca828b8886828fc3238": "4486 + RC0.9: RC0.8 + internal memory pack read-only",
+  "35295b77b94594574f6f04d3e75c7f29733e676bbd380db436d6c7f01a6d51dc": "4486 + RC0.9S = RC0.8S with the new name",
+  "5b10f5bb8cc5533523e7b43ed4a72f2994224822cecb2e7a7a158da6c4fa4ab1": "4486 + SC41.2: SC41.1 + chain rule outside 1-8 = none",
   "07330a71d58001981087e9428c0ca8d605299472b461acde8e2ca0e08ec273c1": "4486 + Beta 1.2 (B1.2) = SC41.2",
-  "8037cba2ad720e42e1f1535e4ab306dabbb3bb3f2bf8fd24dfa1de1f8cd93ac4": "4486 + SC41.1: SC41 + la vista Master FX ya no pisa el estado de otras funciones, valor random del secuenciador de efectos",
-  "3c25eca78e9dd2152e166c1683a29d792cf9fce3fbf57fa771b9515643cd010f": "4486 + RC0.8: RC0.7 + los knobs de pitch del step-drummer conservan su valor",
-  "c78b7b0bbd78cfd856092b246573863e6c7f7f4fe97f7c18eb3159de24f11945": "4486 + RC0.8S: RC0.7S + el arreglo de RC0.8",
-  "cbf029321190e45fc516c55b6868ea2c90081921ac0ffc6540c41a615dec49bc": "4486 + SC40.9: SC40.8 + modo cadena global, Nudge y órdenes en drums, Master FX por sesión, compresor en Sidechain, Record en Setup, arreglo de la pista del step-drummer / secuenciador de efectos",
+  "8037cba2ad720e42e1f1535e4ab306dabbb3bb3f2bf8fd24dfa1de1f8cd93ac4": "4486 + SC41.1: SC41 + the Master FX view no longer overrides other functions' state, random value of the effects sequencer",
+  "3c25eca78e9dd2152e166c1683a29d792cf9fce3fbf57fa771b9515643cd010f": "4486 + RC0.8: RC0.7 + the step-drummer's pitch knobs keep their value",
+  "c78b7b0bbd78cfd856092b246573863e6c7f7f4fe97f7c18eb3159de24f11945": "4486 + RC0.8S: RC0.7S + the RC0.8 fix",
+  "cbf029321190e45fc516c55b6868ea2c90081921ac0ffc6540c41a615dec49bc": "4486 + SC40.9: SC40.8 + global chain mode, Nudge and commands on drums, per-session Master FX, compressor in Sidechain, Record in Setup, step-drummer / effects sequencer track fix",
   "b52c81abdba59fa7baa32d0a16b14b59cc0c91455648d22da5f568bc28a66522": "4486 + Beta 1.0 (B1.0) = SC40.9",
-  "940108b1e92c2c59ad8fd57d7be3fdb7dc7bb054ce49f0e06c73471c817c2ef1": "4486 + RC0.7: RC0.6 + el step-drummer / secuenciador de efectos siguen su pista, knob selector más lento",
-  "7898e7175256ef5e2e9c9033081fb57ec01715ce2133833f3c2366f06f70725c": "4486 + RC0.7S: RC0.6S + los arreglos de RC0.7",
-  "42278e2644cdfede29754ce9c22116af790c1ba29f119a8d8e64903dcce76b5c": "4486 + SC40.8: SC40.7 + Nudge y órdenes de reproducción fractal / deconstruido (Pattern Settings, pads 26-28)",
-  "720c760aa4999b1db2de5b23fc059467e9c5884bcb8e6d593d02cbf7d708ffe4": "4486 + SC40.7: SC40.6 + patches del sinte propio de MIDI 1 / 2 entre packs + tabla nueva de dinámicas",
-  "e504b600f6f7834b60cb0177f1c62fbeecc9aeb9618bb9dafeea3238df66a55a": "4486 + SC40.6: SC40.5 con la interfaz de las cadenas revisada (Shift en amarillo, escenas con cadenas, Shift + pads 9-16 = repeticiones de escena)",
-  "50b5ca80aae3ea2a1d6536241a5da2a99f43336b5d3f7a2709c0f1045a43d759": "4486 + SC40.5: SC40.4 + cadenas de patrones (n veces, luego B, luego C; vista Patterns con Shift + Octave arriba; escenas con repeticiones)",
-  "9359e80283935faf3871f2f2c54d8cf3fa497c99df2f91d0a76bd7ef2f15b9a2": "4486 + SC40.4: SC40.3 con la frecuencia por paso contando las vueltas de cada patrón (sustituye a SC40.3)",
-  "69cac0fcbd23d2b03d2d9b91699675ef965d7bf40e7c251f6fb8c7f1eaa63aee": "4486 + SC40.3: SC40.2 + frecuencia por paso (fila 4 de la vista de probabilidad) y dinámicas aleatorias (pad 25 de Pattern Settings: velocity, posición, duración)",
-  "116167a5a6143bab40ff965c3248199ae583c8698cfa9b31d0fdf455cc427367": "4486 + SC403D: DIAGNÓSTICO = SC402D + marcas en los bytes sin usar de los ajustes de los 64 patrones en el primer guardado (Octave ▼ verde si todos las llevan)",
-  "881fcc6854dc7447b1621cc3631b17d71bab21c116b0cfa75b28090065c22e4d": "4486 + SC402D: DIAGNÓSTICO = SC40.2 + marcas en los últimos 1000 bytes del proyecto antes de cada guardado (LED de Save verde si el proyecto cargado las lleva)",
-  "cc48df64f54e12d24ac36f55427d398808c349c6a6324415334c8fc8b1a8bac2": "4486 + SC40.2: SC40.1 + ataque y release del compresor master con K1 / K2 en la vista Setup",
-  "d2c04ac0f10069fa927c97b57d9fb12532ffe0b26d3e35a06dd96eb4bdcae3cd": "4486 + SC40.1: SC40 + knobs del sidechain (ataque, hold, decay, profundidad) en la vista Sidechain",
-  "26e5261e2f4d13a92bfdc2d0838ef9e7449210a3912c5f5984f4921d8bc45d95": "4486 + SC40D: DIAGNÓSTICO = SC40 + una marca escrita en la tarjeta un segundo después de cada guardado de proyecto (LED de Save verde / rojo)",
-  "fc2212d165a9bd98e93269bd54efcfd9d59a08c3c1fe8466f5bd596bb0e8d17c": "4486 + SC40: SC39.9 + el LFO del Auto-Filter y del Phaser arranca al activar el efecto",
-  "adcbaad8528adf9ebd6ea076aa9fb44e89911175eb5c1197dc97557708667dba": "4486 + SC39.9: SC39.8 + Glitch en el pad 6 y gesto mecánico en el pad 31, Digitise con 4 knobs (K4 = envolvente), colores del tipo de gesto",
-  "38578a4e1041285d3ed3d88e0a8c9d828eff0594bb270e0bba9479316c49b86e": "4486 + SC39.8: SC39.7 + Digitise K3 = envío momentáneo de todas las pistas al delay mientras se mantiene el pad",
-  "60e546d497dbedf10e3b548c9b35078a23c2202293421e1b932d1006cbc7dbc8": "4486 + SC39.7: SC39.6 + gesto mecánico (tape stop, scratch, back spin, rattle) sobre el motor del Glitch en el pad del Vinyl",
-  "4969dd842f75c09e3c7f7fc5327e2f0a78db7d31f871e2f386793aaf85d8af8e": "4486 + SC39.6: SC39.5 + copiar proyectos a otro hueco del pack o de otro pack (vista Projects, Duplicate + A / + B)",
-  "cb37e87e60b3f5e37fe85901819653427902f5fbdd4d5cdd1a1677dbb07ae6d4": "4486 + SC39.5: SC39.4 + los knobs de tipo en colores (modo de filtro y tipo de distorsión de drums, modo de nota del granular) y blanco tenue fijo",
-  "9626ab9a90b7268e285f52a192855bb65a98eec2e95a44a439613e88d03c1c1e": "4486 + SC39.4: SC39.3 + guardar el patch del sinte en el banco (Clear + pad, confirmar) y el mismo gesto para el sinte propio",
-  "373bcdf89013ac246192f06351e1e7945ecbfa45fbc83c211112c5d414404326": "4486 + SC39.3: SC39.2 + editor de los destinos de los macro knobs del sinte (vista de la fuente, pad 32)",
-  "7e5eb057b751cd3ad56137e6d5636e01d873ca8990477a5952b230cf61b17ef7": "4486 + SC39.2: SC39.1 + el sample capturado delante de los efectos de Master FX",
-  "267f8cc32d4a6b5c29a95e29f9056627a28d8f738c2719ae98b9e530b317d108": "4486 + BETA5: sexta beta (= SC39.6): BETA4 + copiar proyectos, knobs de tipo en colores",
-  "9ebd6be8bc1621f81b6ba3774d5cd44adaba5058b8529708f83b9642da2f660c": "4486 + BETA4: quinta beta (= SC39.4): BETA3 + guardar el patch del sinte, destinos de los macro knobs",
-  "10763abec30bdc16a361aba83d73e43968d8bc0cdcb1ac62f430c522d87c1a3c": "4486 + BETA3: cuarta beta (= SC39.2): BETA2 + el arreglo de RC0.5",
-  "3d1f116dbad45289264e1504fbc0abce4080a1cd0eccecf88a380991fbcd2276": "4486 + RC0.4: quinta versión candidata (RC0.3 + arreglos)",
-  "99880f7df5cfbf9884deb46e772a03d891bcd44f867a1e334ecf43a026132928": "4486 + RC0.4S: versión más segura de RC0.4 (nada del mod escribe en la SD)",
-  "add68b146f2b530c3618a5ec6fa0e87a82d01431ff94041f98fc500908f7ea6c": "4486 + BETA0: RC0.4 + funciones nuevas en prueba (= SC38.7)",
-  "4394d74b882c0fd2ae31522fcfc4a94106e9d5601324118d523e100d82c66d43": "4486 + SC37.2: arreglo del intercambio de samples / patches entre packs y del borrado de packs (Clear, pack, Clear)",
-  "b65f1a2ca15e89818bc125756a50295d46c1529562b07551c25edd5b79f9cd24": "4486 + SC37.1: SC37 + intercambio de patches de sinte entre packs (Duplicate + pad en la vista Preset del sinte), amarillo para lo copiado de otro pack",
-  "e6dd8c70d334b19545d71d6c28e1f79eb4cb1b7f13e145564237f996b2e20c77": "4486 + SC37: RC0 + intercambio de samples entre packs (Duplicate + pad, cargar otro pack, Duplicate + pad)",
-  "741510801850523190b854b904fed88d3ae05abdf01c2cfd33865eb28afa7a7a": "4486 + RC0S: version mas segura de RC0 (= SC362S, sin escrituras propias en la SD)",
-  "0d9be5722308df55ce073928a9ac62d2b602b07d9841c533cc756a765f488b46": "4486 + SC34.1: SC34 con el bufer del sample en Y:$E80000 y el loop solo mientras se mantiene el pad",
-  "bb86322df4bbf5019b64bd7859ac89df81d0cd7fe11d075f65f4fe12ca437c6d": "4486 + SC34.2: SC34.1 + modo frase del song pointer (Shift + paso)",
-  "6169e8e6ac669c7a658ca014ba72695d1e4337b9890cb411f9a8c32112ead92b": "4486 + SC32D: DIAGNOSTICO de la memoria externa del DSP (zonas libres)",
-  "ccbffb8f3bf7e93392d163571594155d59df64ae70bd72e13941d4e71f7706d8": "4486 + SC32D.1: DIAGNOSTICO, valores en bruto de la memoria externa del DSP por MIDI (pad 9)",
-  "8a3e353e698e270bdb28da059b66af78927f07503a6d80c0d950f864eedc3db3": "4486 + SC32D2: DIAGNOSTICO, zonas libres de la memoria externa del DSP (16 bits) con volcado MIDI (pads 9 / 10)",
-  "5f92744c4283a7a4679fd5bcd017ed1afa3212d0164dd21b54e7f252eb0ec2de": "4486 + SC21.2: SC21.1 + parametros de reverb y delay con Shift + knob en la vista FX (prueba)",
-  "c1f81539627e12d35b869fa42512edce17b1fdf2057d4db54c2868f7dfe94b85": "4486 + SC21.1: SC21 sin tilt EQ y con feedback de los retornos de reverb / delay (prueba)",
-  "83d993e0dbba49296710e938ff2d30a395013512a020a234b63cc4387a0de2ba": "4486 + SC21: SC20.1 con el modo VCF / VCA / FX reordenado, tipos de filtro, efectos y ganancia (prueba)",
-  "a70565a1a8c4decf90d0dc0834068270df0b185d4a0c9c0a7baf510b17df3f33": "4486 + SC20.2: SC19.9 + los cambios de SC20.1 SIN el modo VCF / VCA (para localizar el fallo de las entradas externas; prueba)",
-  "12cf470031a2bf07aa24bd4dfac31dee49bfac318f3c3a6457d6a40ab613ff27": "4486 + SC20D.1: SC20D con el cuelgue al encender arreglado (DIAGNOSTICO, usar con un proyecto de prueba)",
-  "ea6696572ee3b299bc761bccb563ae64625884aa703176e928b4b35b9a5749b9": "4486 + SC19.1: SC19 + conmutador de la fuente del sinte en su propia vista (pulsar Synth 1 / 2 dos veces) (prueba)",
-  "4b0fe7b9e5954ba0e0887e9595a038c2911150a15cafd06e171d6d3fe67136bf": "4486 + SC18.3: SC18.2 con Octave en los colores de los pads 1 / 17 de la vista FX (prueba)",
-  "78f6a9ac340fd106eb4133efcc0bc5de9f7738c5b74a6a0bd8fe59142c497c19": "4486 + SC17.6: SC17.5 + fila inferior de FX en la vista Master FX + huecos asignables (prueba)",
-  "fbb1818de5a71937cc1db30c50ca544500292131f686eaa400c20c1099a28002": "4486 + SC17.5: SC17.4 + delay/reverb como fuente del sinte (pads 30/31) + teclas de la vista FX (prueba)",
+  "940108b1e92c2c59ad8fd57d7be3fdb7dc7bb054ce49f0e06c73471c817c2ef1": "4486 + RC0.7: RC0.6 + the step-drummer / effects sequencer follow their track, slower selector knob",
+  "7898e7175256ef5e2e9c9033081fb57ec01715ce2133833f3c2366f06f70725c": "4486 + RC0.7S: RC0.6S + the RC0.7 fixes",
+  "42278e2644cdfede29754ce9c22116af790c1ba29f119a8d8e64903dcce76b5c": "4486 + SC40.8: SC40.7 + Nudge and fractal / deconstructed playback commands (Pattern Settings, pads 26-28)",
+  "720c760aa4999b1db2de5b23fc059467e9c5884bcb8e6d593d02cbf7d708ffe4": "4486 + SC40.7: SC40.6 + custom synth patches on MIDI 1 / 2 between packs + new dynamics table",
+  "e504b600f6f7834b60cb0177f1c62fbeecc9aeb9618bb9dafeea3238df66a55a": "4486 + SC40.6: SC40.5 with the chains interface revised (Shift in yellow, scenes with chains, Shift + pads 9-16 = scene repeats)",
+  "50b5ca80aae3ea2a1d6536241a5da2a99f43336b5d3f7a2709c0f1045a43d759": "4486 + SC40.5: SC40.4 + pattern chains (n times, then B, then C; Patterns view with Shift + Octave up; scenes with repeats)",
+  "9359e80283935faf3871f2f2c54d8cf3fa497c99df2f91d0a76bd7ef2f15b9a2": "4486 + SC40.4: SC40.3 with the per-step frequency counting each pattern's repeats (replaces SC40.3)",
+  "69cac0fcbd23d2b03d2d9b91699675ef965d7bf40e7c251f6fb8c7f1eaa63aee": "4486 + SC40.3: SC40.2 + per-step frequency (row 4 of the probability view) and random dynamics (pad 25 of Pattern Settings: velocity, position, duration)",
+  "116167a5a6143bab40ff965c3248199ae583c8698cfa9b31d0fdf455cc427367": "4486 + SC403D: DIAGNOSTIC = SC402D + marks in the unused bytes of the 64 patterns' settings on the first save (Octave ▼ green if all carry them)",
+  "881fcc6854dc7447b1621cc3631b17d71bab21c116b0cfa75b28090065c22e4d": "4486 + SC402D: DIAGNOSTIC = SC40.2 + marks in the project's last 1000 bytes before each save (Save LED green if the loaded project carries them)",
+  "cc48df64f54e12d24ac36f55427d398808c349c6a6324415334c8fc8b1a8bac2": "4486 + SC40.2: SC40.1 + master compressor attack and release with K1 / K2 in the Setup view",
+  "d2c04ac0f10069fa927c97b57d9fb12532ffe0b26d3e35a06dd96eb4bdcae3cd": "4486 + SC40.1: SC40 + sidechain knobs (attack, hold, decay, depth) in the Sidechain view",
+  "26e5261e2f4d13a92bfdc2d0838ef9e7449210a3912c5f5984f4921d8bc45d95": "4486 + SC40D: DIAGNOSTIC = SC40 + a mark written to the card one second after each project save (Save LED green / red)",
+  "fc2212d165a9bd98e93269bd54efcfd9d59a08c3c1fe8466f5bd596bb0e8d17c": "4486 + SC40: SC39.9 + the Auto-Filter and Phaser LFO starts when enabling the effect",
+  "adcbaad8528adf9ebd6ea076aa9fb44e89911175eb5c1197dc97557708667dba": "4486 + SC39.9: SC39.8 + Glitch on pad 6 and mechanical gesture on pad 31, Digitise with 4 knobs (K4 = envelope), gesture type colours",
+  "38578a4e1041285d3ed3d88e0a8c9d828eff0594bb270e0bba9479316c49b86e": "4486 + SC39.8: SC39.7 + Digitise K3 = momentary send of all tracks to the delay while the pad is held",
+  "60e546d497dbedf10e3b548c9b35078a23c2202293421e1b932d1006cbc7dbc8": "4486 + SC39.7: SC39.6 + mechanical gesture (tape stop, scratch, back spin, rattle) on the Glitch engine on the Vinyl pad",
+  "4969dd842f75c09e3c7f7fc5327e2f0a78db7d31f871e2f386793aaf85d8af8e": "4486 + SC39.6: SC39.5 + copy projects to another slot of the pack or of another pack (Projects view, Duplicate + A / + B)",
+  "cb37e87e60b3f5e37fe85901819653427902f5fbdd4d5cdd1a1677dbb07ae6d4": "4486 + SC39.5: SC39.4 + type knobs in colour (drum filter mode and distortion type, granular note mode) and fixed dim white",
+  "9626ab9a90b7268e285f52a192855bb65a98eec2e95a44a439613e88d03c1c1e": "4486 + SC39.4: SC39.3 + save the synth patch to the bank (Clear + pad, confirm) and the same gesture for the custom synth",
+  "373bcdf89013ac246192f06351e1e7945ecbfa45fbc83c211112c5d414404326": "4486 + SC39.3: SC39.2 + editor for the synth macro knob destinations (source view, pad 32)",
+  "7e5eb057b751cd3ad56137e6d5636e01d873ca8990477a5952b230cf61b17ef7": "4486 + SC39.2: SC39.1 + the captured sample ahead of the Master FX effects",
+  "267f8cc32d4a6b5c29a95e29f9056627a28d8f738c2719ae98b9e530b317d108": "4486 + BETA5: sixth beta (= SC39.6): BETA4 + copy projects, type knobs in colour",
+  "9ebd6be8bc1621f81b6ba3774d5cd44adaba5058b8529708f83b9642da2f660c": "4486 + BETA4: fifth beta (= SC39.4): BETA3 + save the synth patch, macro knob destinations",
+  "10763abec30bdc16a361aba83d73e43968d8bc0cdcb1ac62f430c522d87c1a3c": "4486 + BETA3: fourth beta (= SC39.2): BETA2 + the RC0.5 fix",
+  "3d1f116dbad45289264e1504fbc0abce4080a1cd0eccecf88a380991fbcd2276": "4486 + RC0.4: fifth release candidate (RC0.3 + fixes)",
+  "99880f7df5cfbf9884deb46e772a03d891bcd44f867a1e334ecf43a026132928": "4486 + RC0.4S: safer version of RC0.4 (nothing in the mod writes to the SD)",
+  "add68b146f2b530c3618a5ec6fa0e87a82d01431ff94041f98fc500908f7ea6c": "4486 + BETA0: RC0.4 + new features under test (= SC38.7)",
+  "4394d74b882c0fd2ae31522fcfc4a94106e9d5601324118d523e100d82c66d43": "4486 + SC37.2: sample / patch swap between packs and pack deletion fixed (Clear, pack, Clear)",
+  "b65f1a2ca15e89818bc125756a50295d46c1529562b07551c25edd5b79f9cd24": "4486 + SC37.1: SC37 + synth patch swap between packs (Duplicate + pad in the synth Preset view), yellow for what was copied from another pack",
+  "e6dd8c70d334b19545d71d6c28e1f79eb4cb1b7f13e145564237f996b2e20c77": "4486 + SC37: RC0 + sample swap between packs (Duplicate + pad, load another pack, Duplicate + pad)",
+  "741510801850523190b854b904fed88d3ae05abdf01c2cfd33865eb28afa7a7a": "4486 + RC0S: safer version of RC0 (= SC362S, no writes of its own to the SD)",
+  "0d9be5722308df55ce073928a9ac62d2b602b07d9841c533cc756a765f488b46": "4486 + SC34.1: SC34 with the sample buffer at Y:$E80000 and the loop only while the pad is held",
+  "bb86322df4bbf5019b64bd7859ac89df81d0cd7fe11d075f65f4fe12ca437c6d": "4486 + SC34.2: SC34.1 + phrase mode of the song pointer (Shift + step)",
+  "6169e8e6ac669c7a658ca014ba72695d1e4337b9890cb411f9a8c32112ead92b": "4486 + SC32D: DIAGNOSTIC of the DSP's external memory (free zones)",
+  "ccbffb8f3bf7e93392d163571594155d59df64ae70bd72e13941d4e71f7706d8": "4486 + SC32D.1: DIAGNOSTIC, raw values of the DSP's external memory over MIDI (pad 9)",
+  "8a3e353e698e270bdb28da059b66af78927f07503a6d80c0d950f864eedc3db3": "4486 + SC32D2: DIAGNOSTIC, free zones of the DSP's external memory (16 bits) with a MIDI dump (pads 9 / 10)",
+  "5f92744c4283a7a4679fd5bcd017ed1afa3212d0164dd21b54e7f252eb0ec2de": "4486 + SC21.2: SC21.1 + reverb and delay parameters with Shift + knob in the FX view (test)",
+  "c1f81539627e12d35b869fa42512edce17b1fdf2057d4db54c2868f7dfe94b85": "4486 + SC21.1: SC21 without tilt EQ and with feedback from the reverb / delay returns (test)",
+  "83d993e0dbba49296710e938ff2d30a395013512a020a234b63cc4387a0de2ba": "4486 + SC21: SC20.1 with the VCF / VCA / FX mode reordered, filter types, effects and gain (test)",
+  "a70565a1a8c4decf90d0dc0834068270df0b185d4a0c9c0a7baf510b17df3f33": "4486 + SC20.2: SC19.9 + the SC20.1 changes WITHOUT the VCF / VCA mode (to locate the external inputs bug; test)",
+  "12cf470031a2bf07aa24bd4dfac31dee49bfac318f3c3a6457d6a40ab613ff27": "4486 + SC20D.1: SC20D with the hang at power-on fixed (DIAGNOSTIC, use with a test project)",
+  "ea6696572ee3b299bc761bccb563ae64625884aa703176e928b4b35b9a5749b9": "4486 + SC19.1: SC19 + synth source switch in its own view (press Synth 1 / 2 twice) (test)",
+  "4b0fe7b9e5954ba0e0887e9595a038c2911150a15cafd06e171d6d3fe67136bf": "4486 + SC18.3: SC18.2 with Octave in the colours of pads 1 / 17 of the FX view (test)",
+  "78f6a9ac340fd106eb4133efcc0bc5de9f7738c5b74a6a0bd8fe59142c497c19": "4486 + SC17.6: SC17.5 + bottom FX row in the Master FX view + assignable slots (test)",
+  "fbb1818de5a71937cc1db30c50ca544500292131f686eaa400c20c1099a28002": "4486 + SC17.5: SC17.4 + delay/reverb as synth source (pads 30/31) + FX view keys (test)",
 };
 const NOV = [0xF0, 0x00, 0x20, 0x29, 0x00];
 const $ = id => document.getElementById(id);
@@ -631,10 +632,10 @@ function closePort(p) {
 // open both ports, but never wait for ever: a port that vanishes while it is being opened leaves the promise pending
 function openPorts(inp, out, ms = 6000) {
   return Promise.race([Promise.all([inp.open(), out.open()]),
-    new Promise((_, rej) => setTimeout(() => rej(new Error("el puerto no responde (¿se está reiniciando el aparato?)")), ms))]);
+    new Promise((_, rej) => setTimeout(() => rej(new Error("the port is not responding (is the unit restarting?)")), ms))]);
 }
 // After an update (or when the ports vanish mid-transfer) the Circuit Tracks reboots: the page lets go of the MIDIAccess altogether, so nothing
-// of it is alive while the USB device disappears and comes back; "Permitir acceso MIDI" connects again (no new prompt, the permission is kept).
+// of it is alive while the USB device disappears and comes back; "Allow MIDI access" connects again (no new prompt, the permission is kept).
 function dropMidi(msg) {
   releaseAll();
   midi = null;
@@ -662,26 +663,26 @@ const CRC_T = (() => { const t = new Uint32Array(256); for (let i = 0; i < 256; 
   for (let k = 0; k < 8; k++) c = (c & 0x80000000) ? ((c << 1) ^ 0x04C11DB7) : (c << 1); t[i] = c >>> 0; } return t; })();
 function crc32mpeg(u8) { let c = 0xFFFFFFFF; for (const b of u8) c = ((c << 8) ^ CRC_T[((c >>> 24) ^ b) & 0xFF]) >>> 0; return c >>> 0; }
 function nib(arr) { let v = 0; for (const b of arr) { if (b > 15) throw Error("nibble"); v = v * 16 + b; } return v; }
-function unpackBlock(p) { if (p.length !== 37) throw Error("bloque de longitud " + p.length);
-  let bits = 0n; for (const b of p) { if (b & 0x80) throw Error("byte no MIDI"); bits = (bits << 7n) | BigInt(b); }
+function unpackBlock(p) { if (p.length !== 37) throw Error("block of length " + p.length);
+  let bits = 0n; for (const b of p) { if (b & 0x80) throw Error("non-MIDI byte"); bits = (bits << 7n) | BigInt(b); }
   bits >>= 3n; const out = new Uint8Array(32); for (let i = 31; i >= 0; i--) { out[i] = Number(bits & 0xFFn); bits >>= 8n; } return out; }
 
 function parseSyx(buf) {
   const u = new Uint8Array(buf), msgs = [];
   for (let i = 0; i < u.length;) {
-    const s = u.indexOf(0xF0, i); if (s < 0) break; const e = u.indexOf(0xF7, s); if (e < 0) throw Error("SysEx sin terminar");
-    const m = u.slice(s, e + 1); for (let k = 0; k < 5; k++) if (m[k] !== NOV[k]) throw Error("cabecera no Novation");
+    const s = u.indexOf(0xF0, i); if (s < 0) break; const e = u.indexOf(0xF7, s); if (e < 0) throw Error("unterminated SysEx");
+    const m = u.slice(s, e + 1); for (let k = 0; k < 5; k++) if (m[k] !== NOV[k]) throw Error("not a Novation header");
     msgs.push(m); i = e + 1;
   }
   const cmd = msgs.map(m => m[5]);
-  if (cmd[0] !== 0x71 || cmd[1] !== 0x7C || cmd[cmd.length - 1] !== 0x73 || cmd.slice(2, -1).some(c => c !== 0x72)) throw Error("orden de mensajes inesperado");
-  const init = msgs[0].slice(6, -1); if (init[0] !== 0x01 || init[1] !== 0x64) throw Error("no es un firmware de Circuit Tracks (producto " + hex(init.slice(0, 2)) + ")");
+  if (cmd[0] !== 0x71 || cmd[1] !== 0x7C || cmd[cmd.length - 1] !== 0x73 || cmd.slice(2, -1).some(c => c !== 0x72)) throw Error("unexpected message order");
+  const init = msgs[0].slice(6, -1); if (init[0] !== 0x01 || init[1] !== 0x64) throw Error("not Circuit Tracks firmware (product " + hex(init.slice(0, 2)) + ")");
   const hdr = msgs[1].slice(6, -1); const size = nib(hdr.slice(7, 15)), crc = nib(hdr.slice(15, 23));
   const blocks = [unpackBlock(msgs[msgs.length - 1].slice(6, -1))];
   for (const m of msgs.slice(2, -1)) blocks.push(unpackBlock(m.slice(6, -1)));
   const img = new Uint8Array(blocks.length * 32); blocks.forEach((b, i) => img.set(b, i * 32));
-  if (size > img.length || size > 0x70000) throw Error("tamaño inválido");
-  const c = crc32mpeg(img.subarray(0, size)); if (c !== crc) throw Error("CRC no coincide");
+  if (size > img.length || size > 0x70000) throw Error("invalid size");
+  const c = crc32mpeg(img.subarray(0, size)); if (c !== crc) throw Error("CRC does not match");
   return { msgs, size, crc };
 }
 
@@ -691,22 +692,22 @@ async function sha256(buf) { const h = await crypto.subtle.digest("SHA-256", buf
 $("btnMidi").onclick = async () => {
   if (midi) releaseAll();
   try { midi = await navigator.requestMIDIAccess({ sysex: true }); }
-  catch (e) { $("midiState").textContent = "acceso denegado: " + e.message; $("midiState").className = "bad"; return; }
-  $("midiState").textContent = "acceso concedido"; $("midiState").className = "ok";
-  log(`MIDI: acceso concedido, ${midi.inputs.size} entradas y ${midi.outputs.size} salidas: ` + [...midi.inputs.values(), ...midi.outputs.values()].map(p => `«${p.name}»`).join(", "));
+  catch (e) { $("midiState").textContent = "access denied: " + e.message; $("midiState").className = "bad"; return; }
+  $("midiState").textContent = "access granted"; $("midiState").className = "ok";
+  log(`MIDI: access granted, ${midi.inputs.size} inputs and ${midi.outputs.size} outputs: ` + [...midi.inputs.values(), ...midi.outputs.values()].map(p => `"${p.name}"`).join(", "));
   midi.onstatechange = onState; fillPorts(); $("btnId").disabled = false; updateSend();
 };
 let portsTimer = null;
 function onState(ev) {
   const p = ev.port;
-  log(`MIDI: ${p.type} «${p.name}» ${p.state} / ${p.connection}`);          // diagnostic: every port that appears / disappears
+  log(`MIDI: ${p.type} "${p.name}" ${p.state} / ${p.connection}`);          // diagnostic: every port that appears / disappears
   if (p.state === "disconnected") {
-    if (xfer && (p === xfer.out || p === xfer.inp)) { finish("el puerto del Circuit Tracks ha desaparecido (¿se ha reiniciado o desconectado?)", "warn"); dropMidi("el aparato se está reiniciando: espera a que arranque y pulsa «Permitir acceso MIDI»"); return; }
-    if (idPending && (p === idPending.out || p === idPending.inp)) idDone("dispositivo desconectado", "bad");
+    if (xfer && (p === xfer.out || p === xfer.inp)) { finish("the Circuit Tracks port disappeared (did it restart or get unplugged?)", "warn"); dropMidi("the unit is restarting: wait for it to boot and press \"Allow MIDI access\""); return; }
+    if (idPending && (p === idPending.out || p === idPending.inp)) idDone("device disconnected", "bad");
     closePort(p);
     // A MIDIAccess that still holds the ports of a device that went away (reboot, unplug) is what makes Chrome hang when the page is reloaded or closed:
-    // when a Circuit Tracks port disappears, let go of everything; "Permitir acceso MIDI" connects again.
-    if (/circuit tracks/i.test(p.name || "")) { dropMidi("el Circuit Tracks se ha desconectado o reiniciado: cuando esté listo, pulsa «Permitir acceso MIDI»"); return; }
+    // when a Circuit Tracks port disappears, let go of everything; "Allow MIDI access" connects again.
+    if (/circuit tracks/i.test(p.name || "")) { dropMidi("the Circuit Tracks disconnected or restarted: when it is ready, press \"Allow MIDI access\""); return; }
   }
   clearTimeout(portsTimer); portsTimer = setTimeout(() => { if (midi) fillPorts(); }, 400);   // USB re-enumeration fires a burst of events
 }
@@ -716,7 +717,7 @@ function fillPorts() {
   for (const [sel, map] of [[$("outSel"), midi.outputs], [$("inSel"), midi.inputs]]) {
     const prev = sel.value; sel.innerHTML = "";
     const ports = [...map.values()].sort((a, b) => score(b.name) - score(a.name));
-    for (const p of ports) { const o = document.createElement("option"); o.value = p.id; o.textContent = p.name + (score(p.name) === 2 ? "  ← recomendado" : ""); sel.appendChild(o); }
+    for (const p of ports) { const o = document.createElement("option"); o.value = p.id; o.textContent = p.name + (score(p.name) === 2 ? "  ← recommended" : ""); sel.appendChild(o); }
     if ([...sel.options].some(o => o.value === prev)) sel.value = prev;
   }
   updateSend();
@@ -732,19 +733,19 @@ function idDone(msg, cls) {
 }
 $("btnId").onclick = () => {
   const out = outPort(), inp = inPort(); if (!out || !inp || idPending || xfer) return;
-  $("idState").textContent = "esperando respuesta…"; $("idState").className = "";
+  $("idState").textContent = "waiting for a reply…"; $("idState").className = "";
   function h(ev) { const d = ev.data;
     if (d.length === 17 && d[0] === 0xF0 && d[1] === 0x7E && d[3] === 0x06 && d[4] === 0x02) {
-      const mode = d[9] === 1 ? "firmware" : d[9] === 17 ? "bootloader" : "modo " + d[9];
+      const mode = d[8] === 1 ? "firmware" : d[8] === 17 ? "bootloader" : "mode " + d[8];
       const build = d[14] * 128 + d[15];
       const isTracks = d[5] === 0x00 && d[6] === 0x20 && d[7] === 0x29;
-      log("Identidad: " + hex(d)); devMode = mode; showMode();
-      idDone(`${isTracks ? "Novation" : "¿?"} · pid ${hex(d.slice(8, 10))} · ${mode} · build ${build}`, isTracks ? "ok" : "warn");
+      log("Identity: " + hex(d)); devMode = mode; showMode();
+      idDone(`${isTracks ? "Novation" : "?"} · pid ${hex(d.slice(8, 10))} · ${mode} · build ${build}`, isTracks ? "ok" : "warn");
     } }
-  idPending = { inp, out, h, t: setTimeout(() => idDone("sin respuesta", "bad"), 2000) };
+  idPending = { inp, out, h, t: setTimeout(() => idDone("no reply", "bad"), 2000) };
   inp.addEventListener("midimessage", h);
   openPorts(inp, out).then(() => { if (idPending && idPending.h === h) out.send([0xF0, 0x7E, 0x7F, 0x06, 0x01, 0xF7]); })
-    .catch(e => idDone("no se pudo abrir el puerto: " + e.message, "bad"));
+    .catch(e => idDone("could not open the port: " + e.message, "bad"));
 };
 
 // ---------- file
@@ -753,35 +754,35 @@ $("file").onchange = async () => {
   const f = $("file").files[0]; if (!f) return;
   const buf = await f.arrayBuffer(); const h = await sha256(buf);
   let html = `${esc(f.name)} · ${buf.byteLength} bytes<br>SHA-256 ${h}<br>`;
-  if (!KNOWN[h]) { $("fileInfo").innerHTML = html + `<span class="bad">Archivo desconocido: no se enviará.</span>`; return; }
+  if (!KNOWN[h]) { $("fileInfo").innerHTML = html + `<span class="bad">Unknown file: it will not be sent.</span>`; return; }
   try { const p = parseSyx(buf); packets = p.msgs;
-    html += `<span class="ok">✔ ${KNOWN[h]}</span><br>imagen ${p.size} bytes · CRC ${p.crc.toString(16)} verificado · ${packets.length} mensajes`;
+    html += `<span class="ok">✔ ${KNOWN[h]}</span><br>image ${p.size} bytes · CRC ${p.crc.toString(16)} verified · ${packets.length} messages`;
     fileOk = true;
-  } catch (e) { html += `<span class="bad">Archivo inválido: ${esc(e.message)}</span>`; }
+  } catch (e) { html += `<span class="bad">Invalid file: ${esc(e.message)}</span>`; }
   $("fileInfo").innerHTML = html; updateSend();
 };
-// a send to a running firmware can end in «success» and the unit keep the old build (Beta 5.39, 2026-11-08): the bootloader mode by default
+// a send to a running firmware can end in "success" and the unit keep the old build (Beta 5.39, 2026-11-08): the bootloader mode by default
 function modeOk() { return devMode === "bootloader" || $("anyMode").checked; }
 function showMode() {
   const n = $("modeNote");
-  if (devMode === "bootloader") { n.textContent = "Aparato en modo bootloader: listo para enviar."; n.className = "ok"; }
-  else if (devMode) { n.textContent = `El aparato está en ${devMode}: apágalo y enciéndelo con Scales + Preset + Note, luego «Identificar el dispositivo».`; n.className = "warn"; }
-  else { n.textContent = "Pulsa «Identificar el dispositivo»: solo se envía al aparato en modo bootloader."; n.className = "warn"; }
+  if (devMode === "bootloader") { n.textContent = "Unit in bootloader mode: ready to send."; n.className = "ok"; }
+  else if (devMode) { n.textContent = `The unit is in ${devMode}: switch it off and on with Scales + Preset + Note, then "Identify the device".`; n.className = "warn"; }
+  else { n.textContent = "Press \"Identify the device\": only a unit in bootloader mode is sent to."; n.className = "warn"; }
   updateSend();
 }
 function updateSend() { $("btnSend").disabled = !(fileOk && outPort() && inPort() && !xfer && !idPending && modeOk()); }
 $("anyMode").onchange = updateSend;
 
 // ---------- transfer (pull protocol, as Components does)
-const STATUS = { 0: "inicio de actualización", 1: "esperando confirmación: PULSA PLAY en el Circuit Tracks", 16: "cancelado en el dispositivo",
-  17: "se agotó el tiempo de confirmación", 124: "FALLO (composición no viable)", 125: "recibido (composición no viable)", 126: "FALLO (CRC)", 127: "ÉXITO" };
+const STATUS = { 0: "update started", 1: "waiting for confirmation: PRESS PLAY on the Circuit Tracks", 16: "cancelled on the device",
+  17: "confirmation timed out", 124: "FAILED (image not viable)", 125: "received (image not viable)", 126: "FAILED (CRC)", 127: "SUCCESS" };
 
 $("btnSend").onclick = () => {
   const name = $("outSel").selectedOptions[0].textContent;
-  if (!confirm(`Se enviará:\n${$("file").files[0].name}\n\nal puerto: ${name}\n\nNo desconectes el Circuit Tracks hasta que termine. ¿Continuar?`)) return;
+  if (!confirm(`About to send:\n${$("file").files[0].name}\n\nto port: ${name}\n\nDo not unplug the Circuit Tracks until it finishes. Continue?`)) return;
   start();
 };
-$("btnAbort").onclick = () => finish("cancelado por el usuario (el dispositivo descartará la actualización incompleta)", "warn");
+$("btnAbort").onclick = () => finish("cancelled by the user (the device will discard the incomplete update)", "warn");
 
 function start() {
   const out = outPort(), inp = inPort(); if (!out || !inp || xfer) return;
@@ -792,18 +793,18 @@ function start() {
   const me = xfer;
   openPorts(inp, out).then(() => {
     if (xfer !== me) return;
-    log(`Inicio: ${packets.length} mensajes → ${out.name}`);
+    log(`Start: ${packets.length} messages → ${out.name}`);
     sendNext(); // INIT
     if (packets[xfer.next] && packets[xfer.next][5] === 0x7C) sendNext(); // HEADER right after INIT
     arm(25000);
-  }).catch(e => finish("no se pudo abrir el puerto: " + e.message, "bad"));
+  }).catch(e => finish("could not open the port: " + e.message, "bad"));
 }
-function arm(ms) { clearTimeout(xfer.timer); xfer.timer = setTimeout(() => finish("tiempo de espera agotado; no se envió nada más", "bad"), ms); }
+function arm(ms) { clearTimeout(xfer.timer); xfer.timer = setTimeout(() => finish("timeout; nothing more was sent", "bad"), ms); }
 function sendNext() {
   const p = packets[xfer.next++]; xfer.out.send(p);
   $("prog").value = Math.round(100 * xfer.next / packets.length);
   if (xfer.next <= 2 || xfer.next === packets.length) log(`→ ${hex(p.slice(0, 8))}… (${p.length} bytes)`);
-  if (xfer.next === packets.length) { $("phase").textContent = "Transferido; esperando el informe del dispositivo…"; arm(30000); }
+  if (xfer.next === packets.length) { $("phase").textContent = "Transferred; waiting for the device's report…"; arm(30000); }
 }
 function onMsg(ev) {
   const d = ev.data; if (!xfer || d[0] !== 0xF0) return;
@@ -813,14 +814,14 @@ function onMsg(ev) {
     if (d.length === 10) n = d[6] + (d[7] << 7) + (d[8] << 14);
     else if (d.length === 15) { const s = d.slice(6, 14); n = s[7] + (s[6] << 4) + (s[5] << 8); }
     if (n === null) return;
-    if ((n > xfer.last || n === 0) && xfer.next < packets.length) { xfer.last = n; $("phase").textContent = "Transfiriendo…"; sendNext(); if (xfer.next < packets.length) arm(10000); }
+    if ((n > xfer.last || n === 0) && xfer.next < packets.length) { xfer.last = n; $("phase").textContent = "Transferring…"; sendNext(); if (xfer.next < packets.length) arm(10000); }
   } else if (d[5] === 0x73 && d.length === 10) {
-    const c = d[6]; log(`← estado ${c}: ${STATUS[c] || "?"}`, c === 127 ? "ok" : (c >= 124 || c === 16 || c === 17) ? "bad" : "");
-    if (c === 1) { $("phase").textContent = "PULSA PLAY en el Circuit Tracks para confirmar"; arm(25000); }
+    const c = d[6]; log(`← status ${c}: ${STATUS[c] || "?"}`, c === 127 ? "ok" : (c >= 124 || c === 16 || c === 17) ? "bad" : "");
+    if (c === 1) { $("phase").textContent = "PRESS PLAY on the Circuit Tracks to confirm"; arm(25000); }
     else if (c === 0) arm(25000);
-    else if (c === 127) { finish("Actualización recibida correctamente. El Circuit Tracks se reiniciará e instalará el firmware: espera a que arranque.", "ok"); dropMidi("el aparato se reinicia: cuando haya arrancado, pulsa «Permitir acceso MIDI»"); }
+    else if (c === 127) { finish("Update received correctly. The Circuit Tracks will restart and install the firmware: wait for it to boot.", "ok"); dropMidi("the unit is restarting: once it has booted, press \"Allow MIDI access\""); }
     else if (c === 125) arm(30000);
-    else if (c === 16 || c === 17 || c === 124 || c === 126) finish("El dispositivo rechazó la actualización; el firmware actual no se modifica.", "bad");
+    else if (c === 16 || c === 17 || c === 124 || c === 126) finish("The device rejected the update; the current firmware is left unchanged.", "bad");
   }
 }
 function finish(msg, cls) {
@@ -831,7 +832,7 @@ function finish(msg, cls) {
   $("btnAbort").disabled = true; $("file").disabled = false; devMode = null; showMode();
 }
 $("outSel").onchange = $("inSel").onchange = () => { devMode = null; showMode(); };
-if (!navigator.requestMIDIAccess) { $("midiState").textContent = "este navegador no soporta Web MIDI: usa Chrome o Edge"; $("midiState").className = "bad"; }
+if (!navigator.requestMIDIAccess) { $("midiState").textContent = "this browser has no Web MIDI: use Chrome or Edge"; $("midiState").className = "bad"; }
 </script>
 </body>
 </html>

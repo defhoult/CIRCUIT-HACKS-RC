@@ -836,7 +836,7 @@ $("btnId").onclick = () => {
   $("idState").textContent = t("esperando respuesta…", "waiting for an answer…"); $("idState").className = "";
   function h(ev) { const d = ev.data;
     if (d.length === 17 && d[0] === 0xF0 && d[1] === 0x7E && d[3] === 0x06 && d[4] === 0x02) {
-      const mode = d[9] === 1 ? "firmware" : d[9] === 17 ? "bootloader" : t("modo ", "mode ") + d[9]; const build = d[14] * 128 + d[15];
+      const mode = d[8] === 1 ? "firmware" : d[8] === 17 ? "bootloader" : t("modo ", "mode ") + d[8]; const build = d[14] * 128 + d[15];
       idDone(`Circuit Tracks · ${mode} · build ${build}`, "ok"); } }
   idPending = { inp, out, h, t: setTimeout(() => idDone(t("sin respuesta", "no answer"), "bad"), 2000) };
   inp.addEventListener("midimessage", h);
