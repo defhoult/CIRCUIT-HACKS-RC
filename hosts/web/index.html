@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>Circuit Tracks LEDs</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body class="stale">
+<div id="app">
+  <header>
+    <h1>Circuit Tracks <span>LEDs</span></h1>
+    <div id="status" class="status">starting…</div>
+    <div id="dev" class="dev"></div>
+    <div id="stats"></div>
+  </header>
+
+  <nav id="ports" aria-label="MIDI ports"></nav>
+
+  <main id="panel"></main>
+
+  <footer>
+    <button id="full" title="ask the device for every LED again">Refresh</button>
+    <button id="disconnect" title="stop streaming">Disconnect</button>
+    <p>The panel's 69 LEDs, live from the device: the firmware streams the stock converter's own output, so colours, dimming and pulses are
+    exactly what the hardware shows. Streaming stops 2&nbsp;s after this page stops talking to the device. <span id="build"></span></p>
+  </footer>
+</div>
+<script type="module" src="app.js"></script>
+</body>
+</html>
