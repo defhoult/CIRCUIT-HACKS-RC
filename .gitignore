@@ -3,6 +3,7 @@ __pycache__/
 ctre
 ext/
 build/
+.DS_Store
 
 # RC: no Novation firmware in the repository (tools/patch_official.py builds it from yours)
 stock/*.bin
