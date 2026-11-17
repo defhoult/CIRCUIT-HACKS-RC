@@ -255,7 +255,8 @@ def add(img, report, name, mod, gap=0):
     img[at - BASE:end - BASE] = blob
     d[nk] = hex(end)
     d.setdefault("blocks", {})[name] = [hex(at), hex(end)]
-    report[name] = dict(arm_start=hex(at), labels={k: hex(v) for k, v in labels.items()}, prev={k: hex(v) for k, v in prev.items()},
+    report[name] = dict(arm_start=hex(at), labels={k: hex(v) for k, v in labels.items()},
+                        prev={k: (hex(v) if isinstance(v, int) else v) for k, v in prev.items()},
                         listing=sc.disasm(bytes(code), at), dspz_gap=True)
     return labels
 

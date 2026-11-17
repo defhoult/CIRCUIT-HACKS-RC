@@ -23,6 +23,7 @@ Cifras de **RC0** (= SC36.2) sobre el firmware oficial 1.2.1 (build 4486). Salen
 | Memoria externa del DSP (16 bits por palabra) | 16 M palabras (`$000000–$FFFFFF`) | `$337000–$57EFFF` + `$E80000–$FFEFFF` ≈ 4 M palabras (≈ 82 s mono a 48 kHz) | ≈ 1,75 M | **≈ 2,2 M palabras (≈ 45 s)** |
 | Tarjeta SD | la de la tarjeta | — | ficheros `PCM/NN_PCM.wav` del pack al guardar (solo RC0; RC0S nada) | — |
 
+> **SC57.2 (2026-11-15):** `tools/ledmirror.py` (el espejo de los 69 LEDs por USB MIDI; hosts en `hosts/`): 596 B en el primer hueco de `dspz` (quedan **1 164 B** ahí); imagen `0x6FEE8` (igual que la 5.56). RAM `0x2004CA00-0x2004CDB7` (952 B, firma `LRM1`; entre la tabla de `fmmap` y el sitio de `fm8store`, en la zona libre de NOTAS). Sin DSP. CPU: el tick de LEDs compara 69 palabras y manda como mucho un mensaje cada 16 ms por el enrutador del original (+24 B de pila como mucho); **USB**: hasta 346 B cada 16 ms con un host conectado, nada sin su keepalive (2 s). **Instalar `firmware/sc57.3/`** (mismo código, marca nueva: el bootloader salta un bloque de versión igual al instalado; probado en hardware el 2026-11-16).
 > **SC57.1 / Beta 5.56 (2026-11-13):** `mfxhold` (≈ 130 B en el hueco de `dspz`, RAM `0x2004FAD0` 12 B) + `morphz.use_fastatk()` (≈ 40 B; tras un disparo, una pasada del servicio del DSP con ≈ 250 escrituras de parámetros de Synth 1 / 2 en lugar de 40); imagen `0x6FEE8`.
 
 > **SC57 / Beta 5.55 (2026-11-12):** `morphz.use_newstop()` (`c_mzarm` + dos ramas, ≈ 100 B en las zonas libres); imagen `0x6FEE8`, RAM y CPU sin cambios.

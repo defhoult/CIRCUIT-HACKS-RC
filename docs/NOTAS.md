@@ -32,7 +32,7 @@ Analizado el 2026-10-03. Firmware de referencia: **1.2.1 build 4486** (la últim
 - Dispositivo → `F0 00 20 29 00 73 cc …` (10 bytes) con estados: 0 inicio, 1 esperando Play, 16 cancelado, 17 timeout, 124/126 fallo, 125 recibido no viable, **127 éxito**.
 - Dispositivo → `F0 00 20 29 00 72 a b c F7`: solicitud de paquete con contador `a + b<<7 + c<<14` (también hay una forma de 15 bytes en nibbles). El host envía el siguiente si el contador es mayor que el último o vale 0.
 - Tras `73` FINISH el host espera el estado 127. Después el dispositivo reinicia y el bootloader instala desde el staging (con verificación de CRC).
-- Identidad: `F0 7E 7F 06 01 F7` → respuesta de 17 bytes; byte 9: 1 = firmware, 17 = bootloader; build = `d[14]*128 + d[15]`.
+- Identidad: `F0 7E 7F 06 01 F7` → respuesta de 17 bytes; byte 9 (índice 8, contando desde 1): 1 = firmware, 17 = bootloader; build = `d[14]*128 + d[15]`.
 - Implementado en `tools/ct_uploader.html` (Web MIDI, Chrome/Edge). Solo envía SHA-256 de una lista blanca. Probado en hardware el 2026-10-03.
 
 ## Modelo de seguridad del bootloader (desensamblado)
@@ -142,6 +142,83 @@ Analizado el 2026-10-03. Firmware de referencia: **1.2.1 build 4486** (la últim
 - Herramientas: desensamblador, ensamblador y emulador del proyecto libre dsp56300/dsp56300, compilado en el contenedor con permiso del usuario. Listados en `ct/dsp/*.asm`.
 
 ## Parches
+
+### SC57.2 (2026-11-15): el espejo de los 69 LEDs por USB MIDI — ✅ probado en hardware el 2026-11-16 (SC57.3), sin publicar
+
+> **Instalar SC57.3, no SC57.2:** el primer rebuild con la firma CT2 conservó la marca `SC57.2`, y el bootloader **salta una imagen cuyo bloque
+> de versión (`0x1C8`, `0x26` B; la marca son sus 6 últimos bytes) es igual al instalado**: tres flases dieron «éxito» y el aparato siguió con la
+> build vieja (lo delató la sonda: seguía mandando `0x20` y huecos 127→0). `firmware/sc57.3/` es el mismo código con la marca `SC57.3`
+> (SHA `d56b1d91…`) y sí se instala. Lo de abajo es la historia de SC57.2.
+
+= SC57.1 + `tools/ledmirror.py` (`tools/build_sc57_2.py`), hosts en `hosts/` (web; `hosts/README.md`). El Circuit Tracks no tiene pantalla: sus
+69 LEDs son toda su interfaz. La build los retransmite por USB MIDI para que un Mac los dibuje (después un Android, con el mismo renderer).
+
+- **En la salida del conversor, no en los códigos.** El fotograma de códigos (69 medios words que lee `0x0803423C`) pasa por la paleta y por la
+  atenuación / el pulso; el conversor escupe ya las 69 palabras `B,G,R,0` (276 B) que van al panel. Se copia esa salida: colores exactos, sin
+  repetir la lógica de brillos. La llamada al conversor es **una sola** (barrido de todos los `bl` del original): el `bl` de `0x0803418C`,
+  dentro de la tarea de LEDs; `0x08034196`, que se llama desde `0x08033B46` / `0x0803415A` y parecía el siguiente eslabón, es otra función que no
+  llega al conversor.
+- **`c_lm_tick(ctrl, out, frame)` en ese `bl`.** Corre el conversor del original en un búfer propio `CUR`, copia `CUR` al `out` del llamante
+  (idéntico byte a byte a lo de antes: el panel no nota nada) y espeja desde `CUR`; **nunca lee `out`**, que puede ser un periférico. El bloque de
+  estado (`LM = 0x2004CA00`, 952 B) va a la zona libre `0x20044E58-0x2004FDFF` de más abajo (su contenido en los volcados es el patrón de
+  arranque de la SRAM, nunca escrito; la RAM no se borra al encender): se firma solo (`LRM1` en `+0x3B4`) en el primer tick y arranca a cero; un
+  keepalive que llegue antes de ese tick se pierde (el host lo repite a los 250 ms).
+- **Protocolo** (`F0 7D 43 54 32 <tipo> <seq> … F7`, id. `0x7D`): tipo 1 = `START COUNT` + 6 nibbles por LED (bits 23..0 de `R<<16|G<<8|B`,
+  alto primero); tipo 2 = `START COUNT` + (`IDX` + 6 nibbles) por LED cambiado. Los mensajes van por el enrutador del original
+  (`0x08020C90(router, 1 << puerto, &{buf, len})`), que rechaza longitudes ≥ `0x169`: **trozos de 48 LEDs** (298 B el completo, 346 B el delta).
+  Un delta se corta igual (48 + el resto) y `c_lm_flush` rebobina el puntero de escritura al cuerpo (si no, el segundo trozo repetía el primero:
+  lo encontró la emulación). Sin cambios no sale ni un byte; un fotograma cada 16 ms como mucho; el primero tras conectar es completo.
+  **El quinto byte es la firma del build:** `0x32` («CT2») desde el 2026-11-16, `0x20` («CT ») antes. La cabeza entrante acepta los dos y el
+  host también (manda `0x32`, y keepalives en las dos bases hasta que el aparato habla), así que un solo mensaje dice qué firmware corre de
+  verdad sin tocar el número de build que enseña Identify (4486 en los dos).
+- **El fallo que encontró el aparato (2026-11-16, «muy lento y a trompicones»).** `SEQ` iba como byte crudo 0..255, pero el enrutador del
+  original **rechaza cualquier byte de datos ≥ `0x80`** (`0x08020CCE`: `cmp sl, #0x80; blt`), así que cada 128 mensajes tiraba **todos** los
+  siguientes hasta que el contador daba la vuelta a 0: con el panel cambiando a ~48 Hz, **2,9 s de silencio cada 5,8 s** (medido con
+  `tools/probe_ledmirror.py`: huecos de 2,93 s, `SEQ` 127 → 0, tres veces en 20 s; y los keepalives del host, 4/s, llegaban a `0x80` a los
+  32 s y el aparato dejaba de emitir 2 s después). Ahora `SEQ` va **enmascarado a 7 bits** en el firmware y en el host (`keepalive` y el
+  `Mirror`), y `emu_ledmirror.py` imita la validación del enrutador: 300 fotogramas completos (600 mensajes) sin uno solo rechazado, y el
+  salto 127 → 0 sin falso hueco (`hosts/test/proto.test.mjs`, 10 pruebas). La emulación no lo vio porque su enrutador falso no validaba.
+  **Para no volver a adivinar si el flash entró**, el firmware se firma: la app enseña `device firmware "CT2" · 7-bit SEQ` o, si sigue el
+  viejo, `"CT" — PRE-FIX` (rojo). Un hueco que empieza justo después de `SEQ 127` y sigue en 0 es el firmware viejo, sin ambigüedad: la página
+  apunta el par `SEQ a→b` de cada hueco y la sonda también.
+- **Falsos positivos al medir:** con el panel quieto el aparato solo manda ~5 mensajes/s, así que `SEQ` tarda un minuto en llegar a 127 y
+  una prueba corta «pasa» aunque el firmware sea el viejo. `tools/probe_ledmirror.py` ahora imprime un veredicto **PASS/FAIL** y avisa si el
+  panel estaba estático: hay que medir **con el secuenciador sonando**. Además cuenta el salto 127 → 0 como normal (`& 0x7F`, antes usaba
+  `& 0xFF` y lo habría contado como hueco).
+- **Pestaña en segundo plano:** Chrome congela los timers de una pestaña oculta, los keepalives paran y el aparato deja de emitir 2 s después;
+  al volver, la imagen se quedaba congelada hasta que llegara algún delta. La página ahora hace un *resync* (keepalive + fotograma completo)
+  en cuanto vuelve a ser visible o recibe el foco, y lleva un sello de versión (`Host 2026-11-16 · 7-bit SEQ · CT2`) en el pie y en el JSON de
+  `?diag` para saber qué host se está ejecutando.
+- **Diagnóstico:** `?diag` en la app (ida y vuelta de un fotograma completo cada segundo, cadencia, huecos de `SEQ`, coste del pintado,
+  tareas largas y si la pestaña estaba oculta — Chrome no pinta ni deja correr los timers igual en segundo plano) con **Copy log /
+  Download** en JSON, y `tools/probe_ledmirror.py` (mido) que habla el mismo protocolo sin navegador, para separar aparato y USB de Chrome.
+- **Keepalive del host** (`… 32 00 seq …`) y keepalive + completo (`… 32 01 seq …`): se consumen en la cabeza `c_lm_in` (`0x0801EB30`, `b.w`,
+  delante del despachador de SysEx entrante) y ponen `LIVE` / `PORT` / `FULL`; **sin keepalive de menos de 2 s no se envía nada** (cerrar el
+  navegador o desenchufar el Mac lo para solo). La base `0x20` de la build anterior sigue aceptándose. Cualquier otro SysEx —o un mensaje de
+  9 bytes o con otra etiqueta— sigue su camino: `c_lm_in` rehace el prólogo que había en el gancho (la 5.56: la cabeza de `blackbox`,
+  `c_bbsx`) con sus registros.
+- **Pila:** `c_lm_tick` guarda `[r4-r7], lr` (20 B, no 36) porque corre en la tarea de LEDs; medido en emulación, el camino real del tick
+  (con el enrutador, con y sin espejo) llega a **1 580 B** de los 1 792 del límite, y `c_lm_tick` suma **+24 B como mucho** sobre el conversor
+  solo (`emu_ledmirror.py` lo comprueba). `emu_ledstack.py` sigue en 1 768 B: es otra ruta (el constructor del fotograma) que no pasa por el
+  gancho.
+- **Sitio:** 596 B en el primer hueco de `dspz` (gap 0, `0x080694B0`–`0x08069704`; quedan 1 164 B); imagen `0x6FEE8` (igual que la 5.56). RAM 952 B (`0x2004CA00`–`0x2004CDB7`, entre la tabla de `fmmap` y el sitio de `fm8store`).
+- **Hosts:** `hosts/web` (Web MIDI de Chrome / Edge; `?demo` sin aparato, `?demo&old` finge el firmware viejo y enseña el aviso rojo)
+  dibuja una rejilla funcional de 69 celdas en cuatro bloques (pistas,
+  funciones, pads, macros) con el color y el brillo de cada LED, Refresh y Disconnect, y una etiqueta `#dev` con la firma del firmware. **El
+  aviso de «stale» NO es silencio** (el usuario,
+  2026-11-15: la app parpadeaba a oscuro con el panel quieto): sin cambios no sale ni un byte y el aparato no acusa el keepalive, así que 2 s
+  sin mensajes es lo normal; se atenúa solo si no hay puerto abierto, si no ha llegado nunca un fotograma (original o puerto equivocado) o si
+  el puerto MIDI desaparece estando en uso (`statechange` de Web MIDI). La alternativa —un latido de 10 B cada 500 ms en el firmware— queda
+  pendiente para otra build; `hosts/test/webmidi.html` comprueba los tres casos (con fotogramas, 2,5 s de silencio, puerto que se va). `hosts/web/proto.js` (parser y
+  modelo, sin DOM) se prueba con **mensajes reales** de la build (`tools/ledmirror_fixture.py` → `hosts/test/fixtures.json`, 10 pruebas de
+  `node --test`), y `hosts/test/webmidi.html` corre la app entera en Chrome con un `navigator.requestMIDIAccess` falso: puerto, conexión,
+  keepalives, la firma (base forzada `0x20` o `?v2` = `0x32`) y cada celda contra las palabras del fixture (68 encendidas: el LED 30, código
+  31, es negro en la paleta del original). El mismo renderer usa `window.CircuitBridge` si existe: es el contrato del futuro envoltorio Android
+  (WebView no tiene Web MIDI; `android.media.midi` detrás; aún sin JDK / Gradle).
+
+Pruebas `emu_ledmirror.py` (39), `emu_ledstack.py`, `tools/ledmap.py` (→ `hosts/web/panel.json`), `tools/ledmirror_fixture.py`,
+`node --test hosts/test/proto.test.mjs`; `emu_mfxhold.py`, `emu_fastatk.py`, `emu_mzswitch.py`, `emu_morph.py --clear --sus --nocur --four
+--slow`, `emu_blackbox.py`, `emu_blackbox2.py`, `emu_knobhold.py`.
 
 ### App de la tarjeta: la clave de colores de los sintes Nova (2026-11-13)
 
