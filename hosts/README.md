@@ -1,7 +1,8 @@
 # Circuit Tracks LED mirror — host apps
 
-The Circuit Tracks has no screen: its **69 LEDs are the whole UI**. Firmware **SC57.3** streams them over USB MIDI, and these hosts draw them as a
-clean functional grid instead of a copy of the panel: same colour, same brightness, same pulses.
+The Circuit Tracks has no screen: its **69 LEDs are the whole UI**. Firmware **SC57.3** streams them over USB MIDI, and these hosts draw them on
+the panel's own layout — same colour, same brightness, same pulses — without pretending to be the instrument: the keys are flat, a lit LED is
+filled with its colour, and nothing on the page is clickable.
 
 ```
    Circuit Tracks (SC57.3)                      Mac / Android
@@ -9,7 +10,7 @@ clean functional grid instead of a copy of the panel: same colour, same brightne
    │ LED tick             │  SysEx 0x7D   │ hosts/web/ (renderer) │
    │  0x0803423C converter│ ────────────► │  proto.js  parse      │
    │  → 69 × B,G,R words  │  0x43 0x54    │  Mirror    state      │
-   └──────────────────────┘  0x32 …        │  app.js    grid       │
+   └──────────────────────┘  0x32 …        │  app.js    panel      │
                                            └───────────────────────┘
 ```
 
@@ -43,19 +44,28 @@ http://localhost:8765/?demo&old
 
 ## 3. What you see
 
-| Section | LEDs | Indices |
+The page draws the panel in the order it is printed on the hardware (the mock-up the user supplied, 2026-11-17), so a key is where your
+finger expects it, but each key is still looked up by LED index:
+
+| Row | What is there | Indices |
 |---|---|---|
-| Tracks | Synth 1 / 2, MIDI 1 / 2, Drum 1-4 | 32-39 |
-| Functions | Preset, Note, Velocity, Gate, Pattern Settings, Patterns, Mixer, FX, Record, Play, Scales, Oct ▼ / ▲, 1-16 / 17-32, Tempo, Clear, Duplicate, Save, Swing, Shift | 40-59 |
-| Pads | pads 1-32 | 0-31 |
-| Macros | Macro 1-8, Master Filter | 60-68 |
+| Knobs | macros 1-8 (a caption under each) and the master filter, with the filter's wave mark | 60-68 |
+| Functions | Scales · Oct ▼ · Oct ▲ · 1-16 / 17-32 · Tempo / Swing · Clear · Duplicate · Save · Projects · Shift, with the silkscreen above (Tap, Click, Mutate, Setup, Packs) | 50-59 |
+| Tracks | Preset · Synth 1 / 2 · MIDI 1 / 2 · Drum 1-4 · Patterns (View Lock) | 40, 32-39, 45 |
+| Main | Note (Expand) · Velocity (Fixed) · Gate (Micro Step) · Pattern Settings (Probability), pads 1-32, Mixer · FX (Side Chain) · REC (Quantise) · PLAY | 41-44, 0-31, 46-49 |
 
-A lit cell is filled with the LED's own colour and glows; a dark one is a key in the page's colour. The panel dims and marks itself **stale**
-when there is no stream at all — no port open, or a port that has not delivered a single frame (stock firmware, or the wrong port) — and when
-the MIDI port disappears while in use. It deliberately does **not** dim on silence: the device sends nothing while no LED changes and never
-acknowledges a keepalive, so a static panel is silent by design. **Refresh** asks for a full frame; **Disconnect** stops the keepalives.
+A lit cell is filled with the LED's own colour and glows; a dark one is a key in the page's colour, and the label flips to dark type on a bright
+colour. The two-line words on a key and the words above the top row are silkscreen, not state — they never change. The knob captions are a
+fixed legend too: the unit does not report its patches' macro names, so `KNOB_CAPS` in `tools/ledmap.py` decides what they say.
 
-The renderer is responsive: the same four sections in fewer columns on a phone, safe-area padding for a notch.
+The panel dims and marks itself **stale** when there is no stream at all — no port open, or a port that has not delivered a single frame
+(stock firmware, or the wrong port) — and when the MIDI port disappears while in use. It deliberately does **not** dim on silence: the device
+sends nothing while no LED changes and never acknowledges a keepalive, so a static panel is silent by design. **Refresh** asks for a full
+frame; **Disconnect** stops the keepalives.
+
+The whole panel is measured in 1/1046 of its own width, so it scales as one picture and is capped to fit the window's height (no scrolling on a
+laptop). Below ~680 px it keeps a 620 px minimum and the page scrolls sideways rather than shrinking the words to nothing; phone tuning waits
+for the Android shell.
 
 ## 4. The protocol (firmware → host)
 
@@ -151,7 +161,7 @@ sequencer playing**: a static panel only produces ~5 messages/s, so `SEQ` takes 
 can be shared with the browser, but for a clean baseline close the page (otherwise the page's own full-frame requests make the round-trip
 figures meaningless).
 
-The page and the probe both stamp the **host build** (`Host 2026-11-16 · 7-bit SEQ · CT2` in the footer, and `host` in the `?diag` JSON), so an old
+The page and the probe both stamp the **host build** (`Host 2026-11-17 · panel layout · 7-bit SEQ · CT2` in the footer, and `host` in the `?diag` JSON), so an old
 cached page is obvious. The page also resynchronises the moment the tab becomes visible again: a background or occluded tab has its timers
 frozen, so the keepalives stop, the device pauses 2 s later, and without this the picture would stay stale until some delta happened to arrive.
 
@@ -163,8 +173,8 @@ frozen, so the keepalives stop, the device pauses 2 s later, and without this th
 | `web/app.js` | transport (Web MIDI / Android bridge), panel DOM, keepalives, stats, the `?diag` measurements |
 | `web/proto.js` | protocol parser, `Mirror` state, colour helpers — DOM-free, used by the tests |
 | `web/demo.js` | the `?demo` fake device (it builds real protocol messages) |
-| `web/style.css` | the grid |
-| `web/panel.json` | the 69 LEDs and the four sections, generated by `tools/ledmap.py` |
+| `web/style.css` | the panel: layout in `u` (= 1/1046 of its width), the key and container colours |
+| `web/panel.json` | the 69 LEDs and the panel's rows, generated by `tools/ledmap.py` |
 | `test/proto.test.mjs` | Node tests |
 | `test/fixtures.json` | real messages, generated by `tools/ledmirror_fixture.py` |
 | `test/webmidi.html` | the app over a fake Web MIDI, checked in a browser (no hardware needed) |

@@ -187,7 +187,7 @@ Analizado el 2026-10-03. Firmware de referencia: **1.2.1 build 4486** (la últim
   `& 0xFF` y lo habría contado como hueco).
 - **Pestaña en segundo plano:** Chrome congela los timers de una pestaña oculta, los keepalives paran y el aparato deja de emitir 2 s después;
   al volver, la imagen se quedaba congelada hasta que llegara algún delta. La página ahora hace un *resync* (keepalive + fotograma completo)
-  en cuanto vuelve a ser visible o recibe el foco, y lleva un sello de versión (`Host 2026-11-16 · 7-bit SEQ · CT2`) en el pie y en el JSON de
+  en cuanto vuelve a ser visible o recibe el foco, y lleva un sello de versión (`Host 2026-11-17 · panel layout · 7-bit SEQ · CT2`) en el pie y en el JSON de
   `?diag` para saber qué host se está ejecutando.
 - **Diagnóstico:** `?diag` en la app (ida y vuelta de un fotograma completo cada segundo, cadencia, huecos de `SEQ`, coste del pintado,
   tareas largas y si la pestaña estaba oculta — Chrome no pinta ni deja correr los timers igual en segundo plano) con **Copy log /

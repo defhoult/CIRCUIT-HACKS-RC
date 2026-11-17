@@ -1,157 +1,197 @@
 :root {
-  --bg: #0b0d12;
-  --panel: #14171f;
-  --line: #232833;
-  --ink: #e8ecf5;
-  --dim: #8b93a7;
-  --off: #1a1e28;
-  --sel: #2d6cdf;
+  --page: #333333;
+  --panel: #232323;
+  --ink: #d7dbe3;
+  --dim: #9aa0ad;
+  --dim2: #7d8391;
+  --line: #3a3d47;
+  --key: #32353e;
+  --keyline: rgba(198, 208, 228, .30);
+  --sel: #5f82dd;
+  --ok: #9ee6b8;
+  --err: #ffb4a8;
 }
 
 * { box-sizing: border-box; }
 
-html, body {
-  margin: 0;
-  min-height: 100%;
-  background: radial-gradient(1200px 700px at 50% -10%, #171b26 0%, var(--bg) 60%) no-repeat, var(--bg);
+html, body { margin: 0; min-height: 100%; }
+
+body {
+  background: radial-gradient(1100px 620px at 50% -12%, #3a3a3a 0%, var(--page) 62%) no-repeat, var(--page);
   color: var(--ink);
-  font: 14px/1.45 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+  font: 14px/1.42 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
   -webkit-text-size-adjust: 100%;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) calc(12px + env(safe-area-inset-bottom)) env(safe-area-inset-left);
 }
 
-body { padding: env(safe-area-inset-top) env(safe-area-inset-right) calc(16px + env(safe-area-inset-bottom)) env(safe-area-inset-left); }
+#app { max-width: 1180px; margin: 0 auto; padding: 14px 16px 8px; }
 
-#app { max-width: 1080px; margin: 0 auto; padding: 18px 16px 8px; }
+/* ---------------------------------------------------------------- the bar: connection, ports, the two buttons */
 
-header { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; padding: 2px 2px 12px; }
-h1 { font-size: 17px; font-weight: 650; letter-spacing: .2px; margin: 0; }
+.bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 0 2px 12px; min-height: 28px; }
+h1 { font-size: 15px; font-weight: 650; letter-spacing: .2px; margin: 0 6px 0 0; white-space: nowrap; }
 h1 span { color: var(--dim); font-weight: 500; }
 
-.status {
-  font-size: 12px; color: var(--dim);
-  border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px;
-  background: #10131a;
+.status, .dev {
+  font-size: 11.5px; color: var(--dim); white-space: nowrap;
+  background: #262626; border: 1px solid var(--line); border-radius: 999px; padding: 3px 9px;
 }
-.status.on { color: #9ee6b8; border-color: #24452f; }
-.status.err { color: #ffb4a8; border-color: #4a2a25; }
-
-/* which firmware the device is actually running, from the command base it sends: the one byte a flash cannot fake */
-.dev {
-  font-size: 12px; color: var(--dim);
-  border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px;
-  background: #10131a;
-}
+.status.on, .dev.ok { color: var(--ok); border-color: #3d5a45; }
+.status.err, .dev.err { color: var(--err); border-color: #5b3a34; }
 .dev:empty { display: none; }
-.dev.ok { color: #9ee6b8; border-color: #24452f; }
-.dev.err { color: #ffb4a8; border-color: #4a2a25; }
 
-#stats { margin-left: auto; font-variant-numeric: tabular-nums; font-size: 11px; color: var(--dim); }
-
-nav { display: flex; gap: 8px; flex-wrap: wrap; padding: 0 2px 14px; }
+nav { display: flex; gap: 6px; flex-wrap: wrap; }
 nav:empty { display: none; }
 .port {
-  font: inherit; font-size: 12px; color: var(--ink);
-  background: #10131a; border: 1px solid var(--line); border-radius: 8px;
-  padding: 6px 11px; cursor: pointer;
+  font: inherit; font-size: 11.5px; color: var(--ink); cursor: pointer;
+  background: #262626; border: 1px solid var(--line); border-radius: 8px; padding: 4px 10px;
 }
-.port:hover { border-color: #38415a; }
-.port.sel { border-color: var(--sel); background: #16213a; }
+.port:hover { border-color: #5a6072; }
+.port.sel { border-color: var(--sel); background: #2c3550; }
 
-main { display: grid; gap: 14px; }
-
-.block {
-  background: linear-gradient(180deg, #171b24, #12151d);
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 12px 12px 14px;
+.actions { margin-left: auto; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+#stats { font-size: 11px; color: var(--dim2); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.actions button {
+  font: inherit; font-size: 11.5px; color: var(--ink); cursor: pointer;
+  background: #262626; border: 1px solid var(--line); border-radius: 8px; padding: 5px 11px;
 }
-.block h2 {
-  margin: 0 2px 10px; font-size: 11px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--dim);
-  display: flex; align-items: baseline; gap: 10px;
-}
-.block h2 small { font-size: 10px; letter-spacing: .02em; text-transform: none; color: #5d6478; }
+.actions button:hover { border-color: #5a6072; }
 
-.grid {
+/* ---------------------------------------------------------------- the panel: everything is measured in `u`, 1/1046 of its own width, so
+   the whole layout scales as one picture and always fits the window (the width cap keeps it inside the viewport's height too). */
+
+#panel {
+  container-type: inline-size;
+  --u: calc(100cqw / 1046);
+  width: min(100%, max(540px, calc((100dvh - 132px) * 1.28)));
+  margin: 0 auto;
+}
+
+.row {
+  position: relative;
+  background: var(--panel);
+  border: 1px solid #2f2f2f;
+  border-radius: calc(18 * var(--u));
+  padding: calc(13 * var(--u));
+  margin-bottom: calc(20 * var(--u));
+  box-shadow: 0 16px 30px -20px #000000cc, inset 0 1px 0 #ffffff08;
+}
+.row:last-child { margin-bottom: 0; }
+
+/* top row: nine knobs, a caption under each */
+.row.kind-knobs {
   display: grid;
-  grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+  gap: calc(33 * var(--u));
+  padding: calc(15 * var(--u)) calc(13 * var(--u)) calc(14 * var(--u));
+}
+.row.kind-knobs .slot { display: flex; flex-direction: column; gap: calc(8 * var(--u)); }
+.row.kind-knobs .cap {
+  font-size: calc(13 * var(--u)); line-height: 1.2; text-align: center; color: #cfd4dd;
+  min-height: calc(31 * var(--u));
 }
 
-/* every cell: the LED's own colour when on, a dark key when off; the label stays legible either way */
+/* the two button rows: one key, eight keys, one key */
+.slot { position: relative; min-width: 0; }
+.row.kind-keys {
+  display: grid;
+  grid-template-columns: calc(84 * var(--u)) 1fr calc(84 * var(--u));
+  gap: calc(45 * var(--u));
+}
+.mid { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: calc(13 * var(--u)); }
+.col { display: grid; gap: calc(13 * var(--u)); align-content: start; }
+
+.row.functions { padding-top: calc(45 * var(--u)); }
+.row.tracks { padding-top: calc(11 * var(--u)); padding-bottom: calc(11 * var(--u)); }
+
+/* the word the hardware prints above a top-row key (Tap, Click, Mutate, Setup, Packs) */
+.above {
+  position: absolute; left: 0; right: 0; bottom: calc(100% + 7 * var(--u));
+  font-size: calc(11 * var(--u)); color: #99a0ae; text-align: center; white-space: nowrap;
+}
+
+/* bottom row: four transport keys, the pads, four more transport keys */
+.row.kind-main {
+  display: grid;
+  grid-template-columns: calc(84 * var(--u)) 1fr calc(84 * var(--u));
+  gap: calc(45 * var(--u));
+  padding: calc(11 * var(--u)) calc(13 * var(--u));
+}
+.pads {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: calc(13 * var(--u));
+  border-radius: calc(12 * var(--u));
+  outline: 1px solid #3a3d47;
+  outline-offset: calc(10 * var(--u));
+}
+
+/* every cell: a key in the page's colour when off, the LED's own colour and glow when on; the label stays legible either way */
 .cell {
   position: relative;
-  display: flex; align-items: center; justify-content: center;
-  background: var(--off);
-  border: 1px solid #262c39;
-  border-radius: 9px;
-  aspect-ratio: 1 / 1;
-  min-width: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: calc(2 * var(--u));
+  min-width: 0; width: 100%;
+  padding: calc(4 * var(--u)) calc(5 * var(--u));
+  background: var(--key);
+  border: 1px solid var(--keyline);
+  border-radius: calc(9 * var(--u));
+  color: var(--ink);
+  text-align: center;
+  box-shadow: inset 0 1px 0 #ffffff0d, 0 1px 2px #00000059;
   transition: background-color 40ms linear, box-shadow 60ms linear, border-color 60ms linear;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .04);
 }
+.cell .lbl {
+  font-size: calc(13.5 * var(--u)); font-weight: 650; line-height: 1.12;
+  white-space: pre-line; overflow-wrap: anywhere;
+}
+.cell .sub { font-size: calc(10.5 * var(--u)); line-height: 1.15; opacity: .62; }
+.cell .ico { display: block; width: calc(22 * var(--u)); height: calc(13 * var(--u)); }
+
+.cell.key, .cell.pad { aspect-ratio: 1 / 1; }
+.cell.fn { aspect-ratio: 2 / 1; border-radius: calc(8 * var(--u)); }
+.cell.knob { aspect-ratio: 1 / 1; border-radius: 50%; padding: calc(2 * var(--u)); }
+.cell.knob .lbl { font-size: calc(15 * var(--u)); }
+
 .cell[data-on] {
   background: var(--c);
-  border-color: color-mix(in srgb, var(--c) 70%, #000);
-  box-shadow: 0 0 12px -2px color-mix(in srgb, var(--c) 55%, transparent), inset 0 0 0 1px rgba(255, 255, 255, .12);
+  border-color: color-mix(in srgb, var(--c) 62%, #ffffff 14%);
+  box-shadow: 0 0 calc(16 * var(--u)) calc(-3 * var(--u)) color-mix(in srgb, var(--c) 70%, transparent),
+              inset 0 1px 0 #ffffff2e;
 }
-
-.cell .lbl {
-  font-size: 11px; font-weight: 600; letter-spacing: .01em;
-  color: var(--dim);
-  pointer-events: none; user-select: none;
-  padding: 0 4px; text-align: center;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%;
-}
-/* the buttons' names are words, not numbers: let them wrap rather than be cut */
-.cell.button .lbl { white-space: normal; overflow-wrap: anywhere; line-height: 1.15; }
-.cell.wide .lbl { font-size: 9px; }
-
-/* tracks / functions are keys, not pads: a little shorter, they read as buttons */
-.cell.button { aspect-ratio: 1.55 / 1; border-radius: 8px; min-height: 44px; }
-.cell.knob { border-radius: 999px; aspect-ratio: 1 / 1; width: 100%; max-width: 116px; justify-self: center; }
-.cell.knob .lbl { font-size: 10px; }
 
 /* no stream at all (no port, or nothing ever received): dim, so a picture that was never live is not mistaken for the hardware.
    Silence alone does not dim: the device sends nothing while no LED changes and never acks a keepalive. */
-body.stale main { opacity: .55; filter: saturate(.6); }
-body.stale .block h2 small::after { content: " · stale"; color: #7a5a3a; }
+body.stale #panel { opacity: .55; filter: saturate(.6); }
 
-footer { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 16px 2px 0; }
-footer button {
-  font: inherit; font-size: 12px; color: var(--ink);
-  background: #10131a; border: 1px solid var(--line); border-radius: 8px; padding: 7px 12px; cursor: pointer;
+footer { padding: 14px 2px 0; }
+footer p { margin: 0; max-width: 900px; font-size: 11px; line-height: 1.5; color: #8d93a0; }
+#build { color: #6f7583; }
+
+@media (max-width: 1000px) {
+  #panel { width: 100%; }
 }
-footer button:hover { border-color: #38415a; }
-footer p { flex: 1 1 320px; margin: 0; font-size: 11px; color: #666e82; }
 
-@media (max-width: 560px) {
-  #app { padding: 12px 10px 6px; }
-  .grid { gap: 6px; }
-  .cell .lbl { font-size: 9.5px; }
-  .cell.wide .lbl { font-size: 8px; }
-  .block { padding: 10px; border-radius: 12px; }
-  #stats { width: 100%; margin-left: 0; }
-  /* the same panel, in fewer columns: 69 cells still fit a phone without pinching */
-  .block.tracks .grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-  .block.functions .grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
-  .block.macros .grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
-  .cell.button { aspect-ratio: 2 / 1; min-height: 46px; }
+@media (max-width: 680px) {
+  #app { padding: 10px 10px 6px; overflow-x: auto; }
+  /* too narrow for the panel's proportions: keep the words readable and let the panel scroll sideways */
+  #panel { width: 620px; }
+  .actions { width: 100%; }
 }
 
 /* ?diag: the measurements, out of the way of the panel */
 #diag {
   position: fixed; right: 12px; bottom: 12px; z-index: 10;
   width: min(560px, calc(100vw - 24px));
-  background: #0b0d12f2; border: 1px solid #38415a; border-radius: 10px; padding: 10px 12px;
+  background: #232323f2; border: 1px solid #3a3d47; border-radius: 10px; padding: 10px 12px;
   font-size: 11px; color: var(--ink); box-shadow: 0 8px 28px #0009;
 }
 #diag b { display: block; font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--dim); margin-bottom: 6px; }
 #diag pre { margin: 0 0 8px; white-space: pre-wrap; font: 11px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; }
 #diag .diagrow { display: flex; gap: 8px; }
 #diag button {
-  font: inherit; font-size: 11px; color: var(--ink); background: #10131a;
+  font: inherit; font-size: 11px; color: var(--ink); background: #2b2b2b;
   border: 1px solid var(--line); border-radius: 7px; padding: 5px 10px; cursor: pointer;
 }
-#diag button:hover { border-color: #38415a; }
-#build { display: block; margin-top: 4px; color: #4d5568; }
+#diag button:hover { border-color: #5a6072; }

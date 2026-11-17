@@ -1,5 +1,5 @@
 {
- "version": 1,
+ "version": 2,
  "protocol": "F0 7D 43 54 32 <type> <seq> ... F7",
  "leds": [
   {
@@ -352,8 +352,8 @@
   },
   {
    "index": 58,
-   "label": "Swing",
-   "name": "Swing",
+   "label": "Projects",
+   "name": "Projects",
    "group": "functions"
   },
   {
@@ -417,59 +417,190 @@
    "group": "macros"
   }
  ],
- "sections": [
+ "rows": [
   {
-   "id": "tracks",
-   "title": "Tracks",
-   "kind": "button",
-   "columns": 8,
-   "leds": [
-    32,
-    33,
-    34,
-    35,
-    36,
-    37,
-    38,
-    39
-   ],
-   "hint": "the eight track buttons"
+   "id": "macros",
+   "kind": "knobs",
+   "items": [
+    {
+     "led": 60,
+     "text": "1",
+     "caption": "Oscillator"
+    },
+    {
+     "led": 61,
+     "text": "2",
+     "caption": "Oscillator Mod"
+    },
+    {
+     "led": 62,
+     "text": "3",
+     "caption": "Amp Envelope"
+    },
+    {
+     "led": 63,
+     "text": "4",
+     "caption": "Filter Envelope"
+    },
+    {
+     "led": 64,
+     "text": "5",
+     "caption": "Filter Frequency"
+    },
+    {
+     "led": 65,
+     "text": "6",
+     "caption": "Resonance"
+    },
+    {
+     "led": 66,
+     "text": "7",
+     "caption": "Modulation"
+    },
+    {
+     "led": 67,
+     "text": "8",
+     "caption": "FX"
+    },
+    {
+     "led": 68,
+     "icon": "filter",
+     "caption": "Master Filter"
+    }
+   ]
   },
   {
    "id": "functions",
-   "title": "Functions",
-   "kind": "button",
-   "columns": 10,
-   "leds": [
-    40,
-    41,
-    42,
-    43,
-    44,
-    45,
-    46,
-    47,
-    48,
-    49,
-    50,
-    51,
-    52,
-    53,
-    54,
-    55,
-    56,
-    57,
-    58,
-    59
+   "kind": "keys",
+   "left": [
+    {
+     "led": 50,
+     "text": "Scales"
+    }
    ],
-   "hint": "the transport / view buttons"
+   "center": [
+    {
+     "led": 51,
+     "text": "Oct ▼"
+    },
+    {
+     "led": 52,
+     "text": "Oct ▲"
+    },
+    {
+     "led": 53,
+     "text": "1-16\n17-32"
+    },
+    {
+     "led": 54,
+     "text": "Tempo\nSwing",
+     "above": "Tap"
+    },
+    {
+     "led": 55,
+     "text": "Clear",
+     "above": "Click"
+    },
+    {
+     "led": 56,
+     "text": "Duplicate",
+     "above": "Mutate"
+    },
+    {
+     "led": 57,
+     "text": "Save",
+     "above": "Setup"
+    },
+    {
+     "led": 58,
+     "text": "Projects",
+     "above": "Packs"
+    }
+   ],
+   "right": [
+    {
+     "led": 59,
+     "text": "Shift"
+    }
+   ]
   },
   {
-   "id": "pads",
-   "title": "Pads",
-   "kind": "pad",
-   "columns": 8,
-   "leds": [
+   "id": "tracks",
+   "kind": "keys",
+   "left": [
+    {
+     "led": 40,
+     "text": "Preset"
+    }
+   ],
+   "center": [
+    {
+     "led": 32,
+     "text": "Synth 1"
+    },
+    {
+     "led": 33,
+     "text": "Synth 2"
+    },
+    {
+     "led": 34,
+     "text": "MIDI 1"
+    },
+    {
+     "led": 35,
+     "text": "MIDI 2"
+    },
+    {
+     "led": 36,
+     "text": "Drum 1"
+    },
+    {
+     "led": 37,
+     "text": "Drum 2"
+    },
+    {
+     "led": 38,
+     "text": "Drum 3"
+    },
+    {
+     "led": 39,
+     "text": "Drum 4"
+    }
+   ],
+   "right": [
+    {
+     "led": 45,
+     "text": "Patterns",
+     "caption": "View Lock"
+    }
+   ]
+  },
+  {
+   "id": "main",
+   "kind": "main",
+   "left": [
+    {
+     "led": 41,
+     "text": "Note",
+     "caption": "Expand"
+    },
+    {
+     "led": 42,
+     "text": "Velocity",
+     "caption": "Fixed"
+    },
+    {
+     "led": 43,
+     "text": "Gate",
+     "caption": "Micro Step"
+    },
+    {
+     "led": 44,
+     "text": "Pattern Settings",
+     "caption": "Probability"
+    }
+   ],
+   "center": [
     0,
     1,
     2,
@@ -503,25 +634,26 @@
     30,
     31
    ],
-   "hint": "pads 1-32"
-  },
-  {
-   "id": "macros",
-   "title": "Macros",
-   "kind": "knob",
-   "columns": 9,
-   "leds": [
-    60,
-    61,
-    62,
-    63,
-    64,
-    65,
-    66,
-    67,
-    68
-   ],
-   "hint": "the eight macros and the master filter"
+   "right": [
+    {
+     "led": 46,
+     "text": "Mixer"
+    },
+    {
+     "led": 47,
+     "text": "FX",
+     "caption": "Side Chain"
+    },
+    {
+     "led": 48,
+     "text": "REC",
+     "caption": "Quantise"
+    },
+    {
+     "led": 49,
+     "text": "PLAY"
+    }
+   ]
   }
  ]
 }

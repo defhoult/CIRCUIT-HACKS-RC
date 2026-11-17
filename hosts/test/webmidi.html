@@ -11,17 +11,19 @@
 </head>
 <body class="stale">
 <div id="app">
-  <header>
+  <header class="bar">
     <h1>Circuit Tracks <span>LEDs</span></h1>
     <div id="status" class="status">starting…</div>
     <div id="dev" class="dev"></div>
-    <div id="stats"></div>
+    <nav id="ports" aria-label="MIDI ports"></nav>
+    <div class="actions">
+      <span id="stats"></span>
+      <button id="full">Refresh</button>
+      <button id="disconnect">Disconnect</button>
+    </div>
   </header>
-  <nav id="ports" aria-label="MIDI ports"></nav>
-  <main id="panel"></main>
+  <main id="panel" aria-label="The panel's 69 LEDs"></main>
   <footer>
-    <button id="full">Refresh</button>
-    <button id="disconnect">Disconnect</button>
     <p>Test page: the app from <code>../web/</code> over a fake Web MIDI.</p>
   </footer>
 </div>

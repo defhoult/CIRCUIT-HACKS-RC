@@ -9,7 +9,7 @@ const devEl = $('#dev');
 const portsEl = $('#ports');
 const statsEl = $('#stats');
 
-const HOST_BUILD = '2026-11-16 · 7-bit SEQ · CT2';   // stamped in the footer, the ?diag log and the console: tells us which host is running
+const HOST_BUILD = '2026-11-17 · panel layout · 7-bit SEQ · CT2';   // stamped in the footer, the ?diag log and the console: which host is running
 
 const mirror = new Mirror();
 const params = new URLSearchParams(location.search);
@@ -85,34 +85,82 @@ function androidBridge() {
 }
 
 // ---------------------------------------------------------------- the panel
+// panel.json carries the panel in silkscreen order: knobs, the top button row, the track row, then the pads between the transport keys.  A
+// cell is still looked up by LED index; the words under a key and above the top row are the panel's print, not state.
+
+const WAVE = '<svg class="ico" viewBox="0 0 24 13" aria-hidden="true"><path d="M2 9.2C4.4 1.6 7.6.4 10.2 5.2s6 7.2 8.8-.4" fill="none" '
+  + 'stroke="currentColor" stroke-width="2.3" stroke-linecap="round"/></svg>';
+
+function makeCell(led, man, kind, text, caption, icon) {
+  const info = man.leds[led];
+  const c = document.createElement('div');
+  c.className = 'cell ' + kind;
+  c.title = info.name;
+  c.dataset.led = led;
+  if (icon === 'filter') c.innerHTML = WAVE;
+  else {
+    const l = document.createElement('span');
+    l.className = 'lbl';
+    l.textContent = text ?? info.label;
+    c.appendChild(l);
+  }
+  if (caption) {
+    const s = document.createElement('span');
+    s.className = 'sub';
+    s.textContent = caption;
+    c.appendChild(s);
+  }
+  cells[led] = { el: c };
+  return c;
+}
+
+function slot(item, man, kind) {
+  const wrap = document.createElement('div');
+  wrap.className = 'slot';
+  if (item.above) {
+    const a = document.createElement('span');
+    a.className = 'above';
+    a.textContent = item.above;
+    wrap.appendChild(a);
+  }
+  wrap.appendChild(makeCell(item.led, man, kind, item.text, kind === 'knob' ? null : item.caption, item.icon));
+  if (kind === 'knob' && item.caption) {
+    const cap = document.createElement('span');
+    cap.className = 'cap';
+    cap.textContent = item.caption;
+    wrap.appendChild(cap);
+  }
+  return wrap;
+}
+
+function column(items, man, kind) {
+  const col = document.createElement('div');
+  col.className = 'col';
+  for (const it of items) col.appendChild(slot(it, man, kind));
+  return col;
+}
 
 function buildPanel(man) {
   panel.innerHTML = '';
   cells = new Array(NLED);
-  for (const sec of man.sections) {
-    const block = document.createElement('section');
-    block.className = 'block ' + sec.id + ' ' + sec.kind;
-    const h = document.createElement('h2');
-    h.innerHTML = `${sec.title}<small>${sec.hint}</small>`;
-    block.appendChild(h);
-    const grid = document.createElement('div');
-    grid.className = 'grid';
-    grid.style.setProperty('--cols', sec.columns);
-    for (const i of sec.leds) {
-      const led = man.leds[i];
-      const c = document.createElement('div');
-      c.className = 'cell ' + sec.kind + (led.label.length > 5 ? ' wide' : '');
-      c.title = led.name;
-      c.dataset.led = i;
-      const l = document.createElement('span');
-      l.className = 'lbl';
-      l.textContent = led.label;
-      c.appendChild(l);
-      grid.appendChild(c);
-      cells[i] = { el: c, lbl: l };
+  for (const row of man.rows) {
+    const sec = document.createElement('section');
+    sec.className = 'row ' + row.id + ' kind-' + row.kind;
+    if (row.kind === 'knobs') {
+      for (const it of row.items) sec.appendChild(slot(it, man, 'knob'));
+    } else if (row.kind === 'main') {
+      const pads = document.createElement('div');
+      pads.className = 'pads';
+      for (const i of row.center) pads.appendChild(makeCell(i, man, 'pad', null, null, null));
+      sec.append(column(row.left, man, 'key'), pads, column(row.right, man, 'key'));
+    } else {
+      const kind = row.id === 'functions' ? 'fn' : 'key';
+      const mid = document.createElement('div');
+      mid.className = 'mid';
+      for (const it of row.center) mid.appendChild(slot(it, man, kind));
+      sec.append(column(row.left, man, kind), mid, column(row.right, man, kind));
     }
-    block.appendChild(grid);
-    panel.appendChild(block);
+    panel.appendChild(sec);
   }
 }
 
@@ -124,7 +172,7 @@ function paint() {
     const w = mirror.words[i];
     c.el.style.setProperty('--c', css(w));
     c.el.toggleAttribute('data-on', w !== 0);
-    c.lbl.style.color = w && luma(w) > 0.55 ? '#0b0d12' : '';
+    c.el.style.color = w && luma(w) > 0.55 ? '#14161b' : '';
   }
   if (DIAG) diagPaint(performance.now() - t0);
 }
