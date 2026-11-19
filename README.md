@@ -62,7 +62,7 @@ Este repositorio contiene **solo el trabajo propio del proyecto**:
 
 1. **Descarga el firmware oficial** Circuit Tracks 1.2.1 (build 4486) de Novation: [circuittracks-firmware-4486.syx](https://components.novationmusic.com/api/v2/firmwares/168/file). Es el enlace de descarga de Novation Components; la lista completa está en `https://components.novationmusic.com/api/v2/firmwares`, producto `circuit-tracks`.
 2. **[Descarga el instalador](https://ghillermo.github.io/CIRCUIT-HACKS-RC/rc_uploader.zip)** (`rc_uploader.zip`), descomprímelo y abre `rc_uploader.html` en Chrome o Edge (es el mismo [`tools/rc_uploader.html`](tools/rc_uploader.html) del repositorio).
-3. **Elige el `.syx` oficial y la versión**: RC4.11, la versión más segura RC4.11S (o las anteriores), la beta B5.56, u «Oficial» para volver atrás. Las versiones anteriores (la RC anterior y su versión S, RC4.05, RC4.02, RC4, las RC2 y las betas hasta la 5.33) están en el **[instalador antiguo](https://ghillermo.github.io/CIRCUIT-HACKS-RC/rc_uploader_old.zip)** (`rc_uploader_old.zip`), que se usa igual.
+3. **Elige el `.syx` oficial y la versión**: **LM1 — official 1.2.1 + the LED mirror only**, RC4.11, la versión más segura RC4.11S (o las anteriores), la beta B5.56, u «Oficial» para volver atrás. Las versiones anteriores (la RC anterior y su versión S, RC4.05, RC4.02, RC4, las RC2 y las betas hasta la 5.33) están en el **[instalador antiguo](https://ghillermo.github.io/CIRCUIT-HACKS-RC/rc_uploader_old.zip)** (`rc_uploader_old.zip`), que se usa igual.
    - La página parchea el firmware en el navegador.
    - Comprueba que el resultado es idéntico al publicado (SHA-256).
 4. **Conecta el Circuit Tracks y pulsa Enviar.** Confirma con **Play** en el aparato.
@@ -183,7 +183,7 @@ It does **not** include Novation code or binaries (neither the official firmware
 
 1. **Download the official firmware** Circuit Tracks 1.2.1 (build 4486) from Novation: [circuittracks-firmware-4486.syx](https://components.novationmusic.com/api/v2/firmwares/168/file). It is the Novation Components download link; the full list is at `https://components.novationmusic.com/api/v2/firmwares`, product `circuit-tracks`.
 2. **[Download the installer](https://ghillermo.github.io/CIRCUIT-HACKS-RC/rc_uploader.zip)** (`rc_uploader.zip`), unzip it and open `rc_uploader.html` in Chrome or Edge (it is the repository's [`tools/rc_uploader.html`](tools/rc_uploader.html)).
-3. **Pick the official `.syx` and the version**: RC4.11, the safer RC4.11S (or the earlier ones), the beta B5.56, or “Official” to go back. The earlier versions (the previous RC and its S build, RC4.05, RC4.02, RC4, the RC2s and the betas up to 5.33) are in the **[old installer](https://ghillermo.github.io/CIRCUIT-HACKS-RC/rc_uploader_old.zip)** (`rc_uploader_old.zip`), used the same way.
+3. **Pick the official `.syx` and the version**: **LM1 — official 1.2.1 + the LED mirror only** (Novation's firmware as shipped, plus the LED mirror over USB MIDI), RC4.11, the safer RC4.11S (or the earlier ones), the beta B5.56, or “Official” to go back. The earlier versions (the previous RC and its S build, RC4.05, RC4.02, RC4, the RC2s and the betas up to 5.33) are in the **[old installer](https://ghillermo.github.io/CIRCUIT-HACKS-RC/rc_uploader_old.zip)** (`rc_uploader_old.zip`), used the same way.
    - The page patches the firmware in the browser.
    - It checks that the result is identical to the published one (SHA-256).
 4. **Connect the Circuit Tracks and press Send.** Confirm with **Play** on the device.
@@ -238,7 +238,7 @@ Windows without WSL, the workflow of a new patch and details: [`docs/LOCAL.en.md
 - [`LEEME.md`](LEEME.md) — update format and bootloader safety (Spanish and English).
 - [`docs/NOTAS.md`](docs/NOTAS.md) — technical map, bootloader safety model and status of every patch (Spanish). **Latest version: RC4.11**; **safer: RC4.11S**; **beta: B5.56** (new features not yet tested).
 - [`docs/RECURSOS.md`](docs/RECURSOS.md#resources) — resource limits (flash, RAM, storage, program / data / CPU of both DSP cores, external memory): what the original left free, what is used and how it was optimised.
-- `firmware/<version>/` — `manifest.json` and `PRUEBA.md` (test plan on the device, Spanish).
+- `firmware/<version>/` — `manifest.json` and `PRUEBA.md` (test plan on the device, Spanish; LM1's in English).
 - `tools/` — `ct_fw.py`, builders, emulators (Unicorn / Capstone), `ct_uploader.html` and `rc_uploader.html` (Web MIDI).
 - [`CLAUDE.md`](CLAUDE.md) — context for Claude Code (Spanish).
 

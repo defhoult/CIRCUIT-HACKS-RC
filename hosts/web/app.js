@@ -190,7 +190,7 @@ function setDev(v) {
   devVer = v;
   if (!devEl) return;
   devEl.className = 'dev' + (v === 1 ? ' err' : v === 2 ? ' ok' : '');
-  devEl.textContent = v === 1 ? 'device firmware "CT" — PRE-FIX (8-bit SEQ): flash SC57.3'
+  devEl.textContent = v === 1 ? 'device firmware "CT" — PRE-FIX (8-bit SEQ): flash LM1'
     : v === 2 ? 'device firmware "CT2" · 7-bit SEQ'
     : '';
 }
@@ -361,7 +361,7 @@ function diagRender(out) {
   const longMax = diag.longs.length ? Math.max(...diag.longs) : null;
   out.textContent = [
     `run ${num(dur, 0)} s · host ${HOST_BUILD} · tab ${diag.visible ? 'visible+focused' : 'BACKGROUND/occluded'} · hidden ${num(hidden / 1000, 1)} s`,
-    `device ${devVer === 2 ? '"CT2" · 7-bit SEQ' : devVer === 1 ? '"CT" — PRE-FIX (8-bit SEQ), FLASH SC57.3' : 'not heard from yet'}`,
+    `device ${devVer === 2 ? '"CT2" · 7-bit SEQ' : devVer === 1 ? '"CT" — PRE-FIX (8-bit SEQ), FLASH LM1' : 'not heard from yet'}`,
     `rtt   last ${num(rtt.last)}  avg ${num(rtt.avg)}  max ${num(rtt.max)} ms  (${diag.probes.filter((p) => p.rtt != null).length}/${diag.probes.length} answered)`,
     `frame last ${num(frm.last)}  avg ${num(frm.avg)}  max ${num(frm.max)} ms`,
     `msgs  ${num(win.length / span)}/s · ${num(bytes / span, 0)} B/s · seq gaps ${diag.seqGaps} · seq ${mirror.seq == null ? '—' : mirror.seq}`,

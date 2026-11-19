@@ -531,6 +531,7 @@ BUILDS = [
     ("sc32d", "build_sc32d.py", []),
     ("sc32d.1", "build_sc32d_1.py", []),
     ("sc32d2", "build_sc32d_2.py", []),
+    ("lm1", "build_lm1.py", []),               # official 1.2.1 (4486) + the LED mirror only: no feature of the Hacks
 ]
 
 

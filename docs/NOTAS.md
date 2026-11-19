@@ -143,6 +143,29 @@ Analizado el 2026-10-03. Firmware de referencia: **1.2.1 build 4486** (la últim
 
 ## Parches
 
+### LM1 (2026-11-19): la 1.2.1 oficial + solo el espejo de LEDs — ✅ probado en hardware el 2026-11-19
+
+El usuario, 2026-11-19: «take the firmware back to being largely 'stock' (latest version of course) and only retain the parts of CIRCUIT-HACKS
+that we are leveraging», «the only enhancement: the on-screen LED display». **No es un eslabón más de la cadena del Hack:** `firmware/lm1/` sale de
+la imagen **oficial** 1.2.1 build 4486 (SHA `b897e0f0…`, la última en Components) y añade **un solo módulo**, `tools/ledmirror.py`, tal como lo
+ejecuta SC57.3. Ni morph, ni patmut, ni black box, ni line in, ni los extras de FM, ni sidechain, ni motores propios, ni vistas nuevas; el
+aparato se comporta como el de fábrica y sigue diciendo 4486.
+
+- Builder propio, `tools/build_lm1.py` (no encadena con `build_sc57*`): comprueba el SHA de la imagen oficial y garantiza el diff.
+- **En la imagen de Novation cambian 10 bytes:** 3 de la marca en el bloque de versión (`0x1E8`, `LM1`), los 4 de `0x0801EB30` (el despachador de
+  SysEx entrante → `b.w c_lm_in`; el prólogo de serie `2d e9 f0 41` se reproduce en `prev.cont = 0x0801EB34`) y los 3 del `bl` de
+  `0x0803418C` (la única llamada al conversor de LEDs `0x0803423C` → `bl c_lm_tick`). Nada más del código de Novation se toca.
+- **692 bytes añadidos** tras el final de la imagen (`0x0805CDDC`, quedan ~140 KB): `c_lm_tick 0x0805CDDC`, `c_lm_in 0x0805D01C`. RAM
+  `0x2004CA00`, 952 B, firma `LRM1` (por encima del límite del heap de serie `0x20044E58` y muy por debajo de lo más bajo visto de la pila
+  principal, `0x2004FC00`); el bloque se pone a cero solo en el primer tick.
+- Imagen `0x4D090`, SHA `01ad3a56…`, CRC `0xbf1bd1cb`; `.syx` SHA `8da279b1…`. `tools/verify_builds.py lm1` lo reconstruye y compara.
+- `tools/rc_uploader.html`: **LM1 es la primera de la lista** (su `DESC` va en inglés en los dos campos: es la build que usa el usuario), con
+  «Oficial» para volver. Los builds del Hack siguen en `firmware/` como referencia, no se flashean.
+- Protocolo, host, panel y pruebas: idénticos a SC57.3 (`hosts/README.md`). La página avisa «flash LM1» si ve la firma vieja `CT `.
+- Plan de prueba: `firmware/lm1/PRUEBA.md` (en inglés). **Probado en el aparato el 2026-11-19** (el usuario: «all working - stock
+  confirmed»): el espejo dibuja los 69 LEDs y el `Mixer` mantenido ~1 s **no** salta a Master FX (eso es del Hack), así que la build es stock;
+  `probe_ledmirror.py` 25 s: 1198 mensajes, 0 huecos de `SEQ`, 0 agujeros, delta cada ~21 ms, completo 48+21 en ~14 ms.
+
 ### SC57.2 (2026-11-15): el espejo de los 69 LEDs por USB MIDI — ✅ probado en hardware el 2026-11-16 (SC57.3), sin publicar
 
 > **Instalar SC57.3, no SC57.2:** el primer rebuild con la firma CT2 conservó la marca `SC57.2`, y el bootloader **salta una imagen cuyo bloque

@@ -1,11 +1,11 @@
 # Circuit Tracks LED mirror — host apps
 
-The Circuit Tracks has no screen: its **69 LEDs are the whole UI**. Firmware **SC57.3** streams them over USB MIDI, and these hosts draw them on
+The Circuit Tracks has no screen: its **69 LEDs are the whole UI**. Firmware **LM1** streams them over USB MIDI, and these hosts draw them on
 the panel's own layout — same colour, same brightness, same pulses — without pretending to be the instrument: the keys are flat, a lit LED is
 filled with its colour, and nothing on the page is clickable.
 
 ```
-   Circuit Tracks (SC57.3)                      Mac / Android
+   Circuit Tracks (LM1)                        Mac / Android
    ┌──────────────────────┐   USB MIDI    ┌───────────────────────┐
    │ LED tick             │  SysEx 0x7D   │ hosts/web/ (renderer) │
    │  0x0803423C converter│ ────────────► │  proto.js  parse      │
@@ -16,9 +16,14 @@ filled with its colour, and nothing on the page is clickable.
 
 ## 1. Flash the firmware
 
-`build/sc57.3/circuittracks-4486-SC57.3.syx` (or `firmware/sc57.3/`, same bytes, SHA-256 `d56b1d91…`) — see `firmware/sc57.3/PRUEBA.md`.
-Without SC57.3 the page has nothing to show: the stock firmware does not stream. **Do not use `sc57.2/`:** it kept the old version block and
-the bootloader skips it.
+**LM1** is the official 1.2.1 (build 4486) firmware with **only** the mirror added — every other CIRCUIT-HACKS feature is gone, so the unit
+behaves exactly as Novation shipped it. Flash it with `tools/rc_uploader.html` (pick **LM1 — official 1.2.1 + the LED mirror only**, give it your
+official `.syx` or `.bin`, put the unit in bootloader mode: hold **Scales + Preset + Note** while powering on). The file is also in
+`firmware/lm1/` (SHA-256 `8da279b1095a76…`); see `firmware/lm1/PRUEBA.md`. `build/lm1/` holds the same bytes when you have built them locally
+(`python tools/build_lm1.py`).
+
+Without LM1 the page has nothing to show: the stock firmware does not stream. **Official — Novation unchanged** in the same page goes back to
+stock.
 
 After flashing, open the page: the device line must read **`device firmware "CT2" · 7-bit SEQ`**. If it says **`"CT" — PRE-FIX`**, the unit is still
 running the previous build (the flash did not take). The command base is the firmware's own signature — see section 4.
@@ -103,7 +108,7 @@ host expects the 7-bit wrap; a real gap makes it ask for a full frame.
 The host parser and state are tested against **bytes captured from the real firmware** (not hand-written ones):
 
 ```sh
-python3 tools/ledmirror_fixture.py build/sc57.3/circuittracks-4486-SC57.3.bin build/sc57.3/manifest.json
+python3 tools/ledmirror_fixture.py build/lm1/circuittracks-4486-LM1.bin build/lm1/manifest.json
 node --test hosts/test/proto.test.mjs
 ```
 
